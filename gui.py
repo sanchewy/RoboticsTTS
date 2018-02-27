@@ -126,7 +126,7 @@ def settings_popup(Event, frame):
     widget_list = list()    #Use on toplevel window close to 'get()' all the slider properties and pass them to frame.instruction
     toplevel = Toplevel()    
     toplevel.protocol("WM_DELETE_WINDOW", lambda: extract_instructions(frame, widget_list, toplevel))
-    toplevel.geometry('300x300')    
+    toplevel.geometry("300x300+%d+%d" % (Root.winfo_x(), Root.winfo_y()))    
     instruct_type = frame.ListChildren[0].cget('text')
     label1 = Label(toplevel, text="Popup window for frame type "+instruct_type)
     label1.pack()
