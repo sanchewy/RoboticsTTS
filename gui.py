@@ -25,6 +25,7 @@ class Dragged:
         #this gets called when we are dropped
         print("I have been dropped; Target=%s" % ('Target'))
 
+#Not currently being used (see FrameDnd)
 class CanvasDnd(Canvas):
     """
     This is a canvas to which we have added a "dnd_accept" method, so it
@@ -45,15 +46,24 @@ class CanvasDnd(Canvas):
         print("Canvas: dnd_accept")
         return self.GiveDropTo
 
+#Enhanced frame object keeps track of list of children and Drop receptor
 class FrameDnd(Frame):
     def __init__(self, Master, GiveDropTo, **kw):
         Frame.__init__(self,Master, kw)
         self.GiveDropTo = GiveDropTo
+        self.ListChildren = list()
 
     def dnd_accept(self,Source,Event):
         print("Frame: dnd_accept")
         return self.GiveDropTo
+    
+    def add_child(self,child):
+        if(type(child) is list):
+            self.ListChildren.extend(child)
+        else:
+            self.ListChildren.append(child)
 
+#This implements methods required by the TkDnd library for handling widget DND enter, exit, movement, and dropping (We only care about dropping).
 class Receptor:
     """
     This is a thing to act as a TargetObject
@@ -90,12 +100,25 @@ class Receptor:
         else:
             print("Error: Received object was not an instance of Dragged.class.")
 
+#Creates instruction frame with label name and remove and edit buttons at Frame<frame_num>
 def create_instruction_frame(frame_num, button_name):
     frame = frame_dict.get(frame_num)
-    l = Label(frame, text=button_name+" Command", fg='blue', wraplength=75).pack()  
-    b = Button(frame, text='Remove').pack()
-    b2 = Button(frame, text='Edit').pack()
+    lab = Label(frame, text=button_name+" Command", fg='blue', wraplength=75)
+    lab.pack()
+    print(">>> %s <<<" % (str(type(lab))))
+    remove = Button(frame, text='Remove')
+    remove.pack()
+    remove.bind('<ButtonPress>',lambda event: remove_frame_children(event, frame.ListChildren))
+    edit = Button(frame, text='Edit')
+    edit.pack()
+    frame.add_child([lab,remove,edit]) # add children to list in Frame (so that we can delete them later without deleting the entire frame)
 
+#Destroys each child widget passed    
+def remove_frame_children(Event, children):
+    for child in children:
+        child.destroy()
+
+#Hard coded x coordinates of each Frame to determine drop location of widget
 def get_frame_num(x_coor):
     if(x_coor > 80 and x_coor <= 155):
         return 1
@@ -116,6 +139,7 @@ def get_frame_num(x_coor):
     else:
         return -1
 
+#Creates a draggable button object
 def on_dnd_start(Event, button):
     """
     This is invoked by InitiationObject to start the drag and drop process
@@ -139,6 +163,7 @@ frame = Frame(Root)
 frame.pack(side = LEFT)
 Label(frame, text="Commands", fg='blue').pack()
 
+#Create all the left-hand-side instruction option buttons
 Motors = Button(frame,text='Motors')
 Motors.pack(side=BOTTOM)
 Motors.bind('<ButtonPress>', lambda event: on_dnd_start(event, 'Motors'))
@@ -155,10 +180,7 @@ Pause = Button(frame,text='Pause')
 Pause.pack(side=BOTTOM)
 Pause.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'Pause'))
 
-#Create a canvas to act as the Target Widget for the drag and drop. Note that
-# since we are going out of our way to have the Target Widget and the Target
-# Object be different things, we pass a reference to the Target Object to
-# the canvas we are creating.
+#Create all right-hand-side frame rectangles, set them to give drops to TargetObject (Receptor()), and add them to dictionary for coordinate lookup
 frame1 = FrameDnd(Root, width=75, height = 400, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
 frame1.pack(side = LEFT,expand=NO,fill=None,padx=5)
 frame1.pack_propagate(False)
@@ -190,4 +212,5 @@ frame_dict = {1:frame1,2:frame2,3:frame3,4:frame4,5:frame5,6:frame6,7:frame7,8:f
 # CommandTwo = CanvasDnd(Root,GiveDropTo=TargetObject,relief=RAISED,bd=2)
 # CommandTwo.pack(side = LEFT,expand=NO,fill=BOTH)
 
+#Begin main program loop
 Root.mainloop()
