@@ -93,7 +93,7 @@ class Receptor:
         # print(Source.__class__)
         if isinstance(Source, Dragged):
             print("Received object is an instance of Dragged.class from button %s" % (Event.widget.cget('text')))
-            if(get_frame_num(Event.x) in frame_dict):
+            if(get_frame_num(Event.x) in frame_dict and not frame_dict.get(get_frame_num(Event.x)).ListChildren):     # If there are children in frame, it already contains an instruction
                 create_instruction_frame(get_frame_num(Event.x), Event.widget.cget('text'))
             else:
                 print("Error, Invalid drop at x_coor: %s" % (str(Event.x)))
@@ -108,16 +108,17 @@ def create_instruction_frame(frame_num, button_name):
     print(">>> %s <<<" % (str(type(lab))))
     remove = Button(frame, text='Remove')
     remove.pack()
-    remove.bind('<ButtonPress>',lambda event: remove_frame_children(event, frame.ListChildren))
+    remove.bind('<ButtonPress>',lambda event: remove_frame_children(event, frame))
     edit = Button(frame, text='Edit')
     edit.pack()
     edit.bind('<ButtonPress>', lambda event: settings_popup(event, frame))
     frame.add_child([lab,remove,edit]) # add children to list in Frame (so that we can delete them later without deleting the entire frame)
 
 #Destroys each child widget passed    
-def remove_frame_children(Event, children):
-    for child in children:
+def remove_frame_children(Event, frame):
+    for child in frame.ListChildren:
         child.destroy()
+    del frame.ListChildren[:]
         
 #Creates a popup toplevel window for editing the settings of the instruction corresponding to frame.
 def settings_popup(Event, frame):
@@ -129,21 +130,21 @@ def settings_popup(Event, frame):
 
 #Hard coded x coordinates of each Frame to determine drop location of widget
 def get_frame_num(x_coor):
-    if(x_coor > 80 and x_coor <= 155):
+    if(x_coor > 65 and x_coor <= 140):
         return 1
-    elif(x_coor > 165 and x_coor <= 240):
+    elif(x_coor > 150 and x_coor <= 225):
         return 2
-    elif(x_coor > 250 and x_coor <= 325):
+    elif(x_coor > 235 and x_coor <= 310):
         return 3
-    elif(x_coor > 335 and x_coor <= 410):
+    elif(x_coor > 320 and x_coor <= 395):
         return 4
-    elif(x_coor > 420 and x_coor <= 495):
+    elif(x_coor > 405 and x_coor <= 480):
         return 5
-    elif(x_coor > 505 and x_coor <= 580):
+    elif(x_coor > 490 and x_coor <= 565):
         return 6
-    elif(x_coor > 590 and x_coor <= 665):
+    elif(x_coor > 575 and x_coor <= 650):
         return 7
-    elif(x_coor > 675 and x_coor <= 750):
+    elif(x_coor > 660 and x_coor <= 735):
         return 8
     else:
         return -1
@@ -169,7 +170,7 @@ TargetObject = Receptor()
 #Create a button to act as the InitiationObject and bind it to <ButtonPress> so
 # we start drag and drop when the user clicks on it.
 frame = Frame(Root)
-frame.pack(side = LEFT)
+frame.pack(side = LEFT, padx=5)
 Label(frame, text="Commands", fg='blue').pack()
 
 #Create all the left-hand-side instruction option buttons
@@ -190,28 +191,28 @@ Pause.pack(side=BOTTOM)
 Pause.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'Pause'))
 
 #Create all right-hand-side frame rectangles, set them to give drops to TargetObject (Receptor()), and add them to dictionary for coordinate lookup
-frame1 = FrameDnd(Root, width=75, height = 400, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
+frame1 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
 frame1.pack(side = LEFT,expand=NO,fill=None,padx=5)
 frame1.pack_propagate(False)
-frame2 = FrameDnd(Root,width=75, height = 400, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
+frame2 = FrameDnd(Root,width=75, height = 200, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
 frame2.pack(side = LEFT,expand=NO,fill=None,padx=5)
 frame2.pack_propagate(False)
-frame3 = FrameDnd(Root,width=75, height = 400, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
+frame3 = FrameDnd(Root,width=75, height = 200, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
 frame3.pack(side = LEFT,expand=NO,fill=None,padx=5)
 frame3.pack_propagate(False)
-frame4 = FrameDnd(Root,width=75, height = 400, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
+frame4 = FrameDnd(Root,width=75, height = 200, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
 frame4.pack(side = LEFT,expand=NO,fill=None,padx=5)
 frame4.pack_propagate(False)
-frame5 = FrameDnd(Root,width=75, height = 400, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
+frame5 = FrameDnd(Root,width=75, height = 200, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
 frame5.pack(side = LEFT,expand=NO,fill=None,padx=5)
 frame5.pack_propagate(False)
-frame6 = FrameDnd(Root,width=75, height = 400, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
+frame6 = FrameDnd(Root,width=75, height = 200, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
 frame6.pack(side = LEFT,expand=NO,fill=None,padx=5)
 frame6.pack_propagate(False)
-frame7 = FrameDnd(Root,width=75, height = 400, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
+frame7 = FrameDnd(Root,width=75, height = 200, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
 frame7.pack(side = LEFT,expand=NO,fill=None,padx=5)
 frame7.pack_propagate(False)
-frame8 = FrameDnd(Root,width=75, height = 400, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
+frame8 = FrameDnd(Root,width=75, height = 200, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
 frame8.pack(side = LEFT,expand=NO,fill=None,padx=5)
 frame8.pack_propagate(False)
 
