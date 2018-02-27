@@ -4,10 +4,10 @@ This code demonstrates "bare bones" drag and drop
 
 try:
     # for Python2
-    from Tkinter import *   ## notice capitalized T in Tkinter 
+    from Tkinter import *  ## notice capitalized T in Tkinter 
 except ImportError:
     # for Python3
-    from tkinter import *   ## notice lowercase 't' in tkinter here
+    from tkinter import *  ## notice lowercase 't' in tkinter here
 try:
     import Tkdnd
 except ImportError:
@@ -54,7 +54,7 @@ class FrameDnd(Frame):
         self.ListChildren = list()
 
     def dnd_accept(self,Source,Event):
-        print("Frame: dnd_accept")
+        print("Frame: is ready to accept dnd.")
         return self.GiveDropTo
     
     def add_child(self,child):
@@ -111,12 +111,21 @@ def create_instruction_frame(frame_num, button_name):
     remove.bind('<ButtonPress>',lambda event: remove_frame_children(event, frame.ListChildren))
     edit = Button(frame, text='Edit')
     edit.pack()
+    edit.bind('<ButtonPress>', lambda event: settings_popup(event, frame))
     frame.add_child([lab,remove,edit]) # add children to list in Frame (so that we can delete them later without deleting the entire frame)
 
 #Destroys each child widget passed    
 def remove_frame_children(Event, children):
     for child in children:
         child.destroy()
+        
+#Creates a popup toplevel window for editing the settings of the instruction corresponding to frame.
+def settings_popup(Event, frame):
+    toplevel = Toplevel()
+    toplevel.geometry('300x300')
+    instruct_type = frame.ListChildren[0].cget('text')
+    label1 = Label(toplevel, text="Popup window for frame type "+instruct_type)
+    label1.pack()
 
 #Hard coded x coordinates of each Frame to determine drop location of widget
 def get_frame_num(x_coor):
