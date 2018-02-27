@@ -13,6 +13,10 @@ try:
     import Tkdnd
 except ImportError:
     import tkinter.dnd as Tkdnd
+    
+SERVO_TOP = 9000
+SERVO_BOTTOM = 3000
+STEP_SIZE = 500   
 
 class Dragged:
     """
@@ -126,18 +130,47 @@ def settings_popup(Event, frame):
     widget_list = list()    #Use on toplevel window close to 'get()' all the slider properties and pass them to frame.instruction
     toplevel = Toplevel()    
     toplevel.protocol("WM_DELETE_WINDOW", lambda: extract_instructions(frame, widget_list, toplevel))
-    toplevel.geometry("300x300+%d+%d" % (Root.winfo_x(), Root.winfo_y()))    
+    toplevel.geometry("600x300+%d+%d" % (Root.winfo_x(), Root.winfo_y()))    
     instruct_type = frame.ListChildren[0].cget('text')
     label1 = Label(toplevel, text="Popup window for frame type "+instruct_type)
     label1.pack()
     
     #  print(">>> %s <<<" % (str(instruct_type)))
     if(instruct_type == "Pause Command"):
-        slider = Scale(toplevel, from_=0, to_=5, orient=HORIZONTAL, label='Pause Len: ')
+        slider = Scale(toplevel, from_=0, to_=5, orient=HORIZONTAL, label='Pause Len:', length=200)
         widget_list.append(slider)
         slider.pack()
+    elif(instruct_type == "BodyTurn Command"):
+        slider = Scale(toplevel, from_=SERVO_BOTTOM, to_=SERVO_TOP, tickinterval=STEP_SIZE, orient=HORIZONTAL, label='Body Turn To:', length=500)
+        slider.set((SERVO_BOTTOM+SERVO_TOP)/2)
+        widget_list.append(slider)
+        slider.pack()
+    elif(instruct_type == "HeadTurn Command"):
+        slider = Scale(toplevel, from_=SERVO_BOTTOM, to_=SERVO_TOP, tickinterval=STEP_SIZE, orient=HORIZONTAL, label='Head Turn To:', length=500)
+        slider.set((SERVO_BOTTOM+SERVO_TOP)/2)
+        widget_list.append(slider)
+        slider.pack()
+    elif(instruct_type == "HeadTilt Command"):
+        slider = Scale(toplevel, from_=SERVO_BOTTOM, to_=SERVO_TOP, tickinterval=STEP_SIZE, orient=HORIZONTAL, label='Head Tilt To:', length=500)
+        slider.set((SERVO_BOTTOM+SERVO_TOP)/2)
+        widget_list.append(slider)
+        slider.pack()
+    elif(instruct_type == "Motors Command"):
+        v = IntVar()
+        rb1 = Radiobutton(toplevel, text="Turn", padx = 20, variable=v, value=1)
+        rb1.pack()
+        rb2 = Radiobutton(toplevel, text="Forward/Backward",padx = 20, variable=v, value=2)
+        rb2.pack()
+        print(v.get())
+        if(v.get()==2):
+            print("2222")
+        elif(v.get()==1):
+            print("1111")
+        else:
+            print("Error: Radio button selection was neither choice?")
+        
     else:
-        pass
+        print("Error: Unrecognized instruction type: " + str(instruct_type))
         
 #Get values from sliders and buttons to set the instruction parameters for the given frame
 def extract_instructions(frame, widget_list, window):
