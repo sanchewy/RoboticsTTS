@@ -1,6 +1,7 @@
 """
 This code demonstrates "bare bones" drag and drop
 """
+import sys
 
 try:
     # for Python2
@@ -54,7 +55,7 @@ class FrameDnd(Frame):
         self.ListChildren = list()
 
     def dnd_accept(self,Source,Event):
-        print("Frame: is ready to accept dnd.")
+        # print("Frame: is ready to accept dnd.")
         return self.GiveDropTo
     
     def add_child(self,child):
@@ -105,7 +106,7 @@ def create_instruction_frame(frame_num, button_name):
     frame = frame_dict.get(frame_num)
     lab = Label(frame, text=button_name+" Command", fg='blue', wraplength=75)
     lab.pack()
-    print(">>> %s <<<" % (str(type(lab))))
+    # print(">>> %s <<<" % (str(type(lab))))
     remove = Button(frame, text='Remove')
     remove.pack()
     remove.bind('<ButtonPress>',lambda event: remove_frame_children(event, frame))
@@ -122,11 +123,30 @@ def remove_frame_children(Event, frame):
         
 #Creates a popup toplevel window for editing the settings of the instruction corresponding to frame.
 def settings_popup(Event, frame):
-    toplevel = Toplevel()
-    toplevel.geometry('300x300')
+    widget_list = list()    #Use on toplevel window close to 'get()' all the slider properties and pass them to frame.instruction
+    toplevel = Toplevel()    
+    toplevel.protocol("WM_DELETE_WINDOW", lambda: extract_instructions(frame, widget_list, toplevel))
+    toplevel.geometry('300x300')    
     instruct_type = frame.ListChildren[0].cget('text')
     label1 = Label(toplevel, text="Popup window for frame type "+instruct_type)
     label1.pack()
+    
+    #  print(">>> %s <<<" % (str(instruct_type)))
+    if(instruct_type == "Pause Command"):
+        slider = Scale(toplevel, from_=0, to_=5, orient=HORIZONTAL, label='Pause Len: ')
+        widget_list.append(slider)
+        slider.pack()
+    else:
+        pass
+        
+#Get values from sliders and buttons to set the instruction parameters for the given frame
+def extract_instructions(frame, widget_list, window):
+    for wid in widget_list:
+        sys.stdout.write("Window had widget of type: %s" % str(type(wid)))
+        if isinstance(wid, Scale):
+            sys.stdout.write(" with slider value: "+str(wid.get()))
+        sys.stdout.write('\n')
+    window.destroy()
 
 #Hard coded x coordinates of each Frame to determine drop location of widget
 def get_frame_num(x_coor):
