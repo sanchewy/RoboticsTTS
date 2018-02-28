@@ -2,6 +2,7 @@
 This code demonstrates "bare bones" drag and drop
 """
 import sys
+import platform
 
 try:
     # for Python2
@@ -94,6 +95,7 @@ class Receptor:
         #This is called if the DraggedObject is being dropped on us
         print ("Receptor: dnd_commit; Object received = %s" % str(Source))
         print("Accepting Frame Number = %s" % str(get_frame_num(Event.x)))
+        print("Location: "+str(Event.x))
         # print(dir(Source))
         # print(Source.__class__)
         if isinstance(Source, Dragged):
@@ -183,21 +185,24 @@ def extract_instructions(frame, widget_list, window):
 
 #Hard coded x coordinates of each Frame to determine drop location of widget
 def get_frame_num(x_coor):
-    if(x_coor > 95 and x_coor <= 165):
+    win_increment = (0,0)
+    if(platform.system() == 'Windows'):
+        win_increment = (15,10)
+    if(x_coor > 95 - win_increment[0] and x_coor <= 165 - win_increment[1]): #80 - 155
         return 1
-    elif(x_coor > 175 and x_coor <= 250):
+    elif(x_coor > 175 - win_increment[0] and x_coor <= 250 - win_increment[1]): #165 - 240
         return 2
-    elif(x_coor > 260 and x_coor <= 335):
+    elif(x_coor > 260 - win_increment[0] and x_coor <= 335 - win_increment[1]):
         return 3
-    elif(x_coor > 345 and x_coor <= 420):
+    elif(x_coor > 345 - win_increment[0] and x_coor <= 420 - win_increment[1]):
         return 4
-    elif(x_coor > 430 and x_coor <= 505):
+    elif(x_coor > 430 - win_increment[0] and x_coor <= 505 - win_increment[1]):
         return 5
-    elif(x_coor > 515 and x_coor <= 590):
+    elif(x_coor > 515 - win_increment[0] and x_coor <= 590 - win_increment[1]):
         return 6
-    elif(x_coor > 600 and x_coor <= 675):
+    elif(x_coor > 600 - win_increment[0] and x_coor <= 675 - win_increment[1]):
         return 7
-    elif(x_coor > 685 and x_coor <= 765):
+    elif(x_coor > 685 - win_increment[0] and x_coor <= 765 - win_increment[1]):
         return 8
     else:
         return -1
