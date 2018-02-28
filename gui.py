@@ -1,6 +1,7 @@
 """
 This code demonstrates "bare bones" drag and drop
 """
+import sys
 
 try:
     # for Python2
@@ -12,6 +13,10 @@ try:
     import Tkdnd
 except ImportError:
     import tkinter.dnd as Tkdnd
+    
+SERVO_TOP = 9000
+SERVO_BOTTOM = 3000
+STEP_SIZE = 500   
 
 class Dragged:
     """
@@ -54,7 +59,7 @@ class FrameDnd(Frame):
         self.ListChildren = list()
 
     def dnd_accept(self,Source,Event):
-        print("Frame: is ready to accept dnd.")
+        # print("Frame: is ready to accept dnd.")
         return self.GiveDropTo
     
     def add_child(self,child):
@@ -105,7 +110,7 @@ def create_instruction_frame(frame_num, button_name):
     frame = frame_dict.get(frame_num)
     lab = Label(frame, text=button_name+" Command", fg='blue', wraplength=75)
     lab.pack()
-    print(">>> %s <<<" % (str(type(lab))))
+    # print(">>> %s <<<" % (str(type(lab))))
     remove = Button(frame, text='Remove')
     remove.pack()
     remove.bind('<ButtonPress>',lambda event: remove_frame_children(event, frame))
@@ -122,29 +127,77 @@ def remove_frame_children(Event, frame):
         
 #Creates a popup toplevel window for editing the settings of the instruction corresponding to frame.
 def settings_popup(Event, frame):
-    toplevel = Toplevel()
-    toplevel.geometry('300x300')
+    widget_list = list()    #Use on toplevel window close to 'get()' all the slider properties and pass them to frame.instruction
+    toplevel = Toplevel()    
+    toplevel.protocol("WM_DELETE_WINDOW", lambda: extract_instructions(frame, widget_list, toplevel))
+    toplevel.geometry("600x300+%d+%d" % (Root.winfo_x(), Root.winfo_y()))    
     instruct_type = frame.ListChildren[0].cget('text')
     label1 = Label(toplevel, text="Popup window for frame type "+instruct_type)
     label1.pack()
+    
+    #  print(">>> %s <<<" % (str(instruct_type)))
+    if(instruct_type == "Pause Command"):
+        slider = Scale(toplevel, from_=0, to_=5, orient=HORIZONTAL, label='Pause Len:', length=200)
+        widget_list.append(slider)
+        slider.pack()
+    elif(instruct_type == "BodyTurn Command"):
+        slider = Scale(toplevel, from_=SERVO_BOTTOM, to_=SERVO_TOP, tickinterval=STEP_SIZE, orient=HORIZONTAL, label='Body Turn To:', length=500)
+        slider.set((SERVO_BOTTOM+SERVO_TOP)/2)
+        widget_list.append(slider)
+        slider.pack()
+    elif(instruct_type == "HeadTurn Command"):
+        slider = Scale(toplevel, from_=SERVO_BOTTOM, to_=SERVO_TOP, tickinterval=STEP_SIZE, orient=HORIZONTAL, label='Head Turn To:', length=500)
+        slider.set((SERVO_BOTTOM+SERVO_TOP)/2)
+        widget_list.append(slider)
+        slider.pack()
+    elif(instruct_type == "HeadTilt Command"):
+        slider = Scale(toplevel, from_=SERVO_BOTTOM, to_=SERVO_TOP, tickinterval=STEP_SIZE, orient=HORIZONTAL, label='Head Tilt To:', length=500)
+        slider.set((SERVO_BOTTOM+SERVO_TOP)/2)
+        widget_list.append(slider)
+        slider.pack()
+    elif(instruct_type == "Motors Command"):
+        v = IntVar()
+        rb1 = Radiobutton(toplevel, text="Turn", padx = 20, variable=v, value=1)
+        rb1.pack()
+        rb2 = Radiobutton(toplevel, text="Forward/Backward",padx = 20, variable=v, value=2)
+        rb2.pack()
+        print(v.get())
+        if(v.get()==2):
+            print("2222")
+        elif(v.get()==1):
+            print("1111")
+        else:
+            print("Error: Radio button selection was neither choice?")
+        
+    else:
+        print("Error: Unrecognized instruction type: " + str(instruct_type))
+        
+#Get values from sliders and buttons to set the instruction parameters for the given frame
+def extract_instructions(frame, widget_list, window):
+    for wid in widget_list:
+        sys.stdout.write("Window had widget of type: %s" % str(type(wid)))
+        if isinstance(wid, Scale):
+            sys.stdout.write(" with slider value: "+str(wid.get()))
+        sys.stdout.write('\n')
+    window.destroy()
 
 #Hard coded x coordinates of each Frame to determine drop location of widget
 def get_frame_num(x_coor):
-    if(x_coor > 65 and x_coor <= 140):
+    if(x_coor > 95 and x_coor <= 165):
         return 1
-    elif(x_coor > 150 and x_coor <= 225):
+    elif(x_coor > 175 and x_coor <= 250):
         return 2
-    elif(x_coor > 235 and x_coor <= 310):
+    elif(x_coor > 260 and x_coor <= 335):
         return 3
-    elif(x_coor > 320 and x_coor <= 395):
+    elif(x_coor > 345 and x_coor <= 420):
         return 4
-    elif(x_coor > 405 and x_coor <= 480):
+    elif(x_coor > 430 and x_coor <= 505):
         return 5
-    elif(x_coor > 490 and x_coor <= 565):
+    elif(x_coor > 515 and x_coor <= 590):
         return 6
-    elif(x_coor > 575 and x_coor <= 650):
+    elif(x_coor > 600 and x_coor <= 675):
         return 7
-    elif(x_coor > 660 and x_coor <= 735):
+    elif(x_coor > 685 and x_coor <= 765):
         return 8
     else:
         return -1
@@ -169,9 +222,9 @@ TargetObject = Receptor()
 
 #Create a button to act as the InitiationObject and bind it to <ButtonPress> so
 # we start drag and drop when the user clicks on it.
-frame = Frame(Root)
+frame = Frame(Root, width=100, height = 200)
+frame.pack_propagate(False)
 frame.pack(side = LEFT, padx=5)
-Label(frame, text="Commands", fg='blue').pack()
 
 #Create all the left-hand-side instruction option buttons
 Motors = Button(frame,text='Motors')
@@ -189,6 +242,7 @@ BodyTurn.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'BodyTurn'))
 Pause = Button(frame,text='Pause')
 Pause.pack(side=BOTTOM)
 Pause.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'Pause'))
+Label(frame, text="Commands", fg='blue').pack(side=BOTTOM)
 
 #Create all right-hand-side frame rectangles, set them to give drops to TargetObject (Receptor()), and add them to dictionary for coordinate lookup
 frame1 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
