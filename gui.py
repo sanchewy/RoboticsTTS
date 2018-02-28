@@ -183,21 +183,21 @@ def extract_instructions(frame, widget_list, window):
 
 #Hard coded x coordinates of each Frame to determine drop location of widget
 def get_frame_num(x_coor):
-    if(x_coor > 65 and x_coor <= 140):
+    if(x_coor > 95 and x_coor <= 165):
         return 1
-    elif(x_coor > 150 and x_coor <= 225):
+    elif(x_coor > 175 and x_coor <= 250):
         return 2
-    elif(x_coor > 235 and x_coor <= 310):
+    elif(x_coor > 260 and x_coor <= 335):
         return 3
-    elif(x_coor > 320 and x_coor <= 395):
+    elif(x_coor > 345 and x_coor <= 420):
         return 4
-    elif(x_coor > 405 and x_coor <= 480):
+    elif(x_coor > 430 and x_coor <= 505):
         return 5
-    elif(x_coor > 490 and x_coor <= 565):
+    elif(x_coor > 515 and x_coor <= 590):
         return 6
-    elif(x_coor > 575 and x_coor <= 650):
+    elif(x_coor > 600 and x_coor <= 675):
         return 7
-    elif(x_coor > 660 and x_coor <= 735):
+    elif(x_coor > 685 and x_coor <= 765):
         return 8
     else:
         return -1
@@ -222,9 +222,9 @@ TargetObject = Receptor()
 
 #Create a button to act as the InitiationObject and bind it to <ButtonPress> so
 # we start drag and drop when the user clicks on it.
-frame = Frame(Root)
+frame = Frame(Root, width=100, height = 200)
+frame.pack_propagate(False)
 frame.pack(side = LEFT, padx=5)
-Label(frame, text="Commands", fg='blue').pack()
 
 #Create all the left-hand-side instruction option buttons
 Motors = Button(frame,text='Motors')
@@ -242,6 +242,7 @@ BodyTurn.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'BodyTurn'))
 Pause = Button(frame,text='Pause')
 Pause.pack(side=BOTTOM)
 Pause.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'Pause'))
+Label(frame, text="Commands", fg='blue').pack(side=BOTTOM)
 
 #Create all right-hand-side frame rectangles, set them to give drops to TargetObject (Receptor()), and add them to dictionary for coordinate lookup
 frame1 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
