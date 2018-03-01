@@ -17,7 +17,9 @@ except ImportError:
     
 SERVO_TOP = 9000
 SERVO_BOTTOM = 3000
-STEP_SIZE = 500   
+STEP_SIZE = 500
+
+frame_dict = {}     #I had to make this global ABOVE execute_instructions(). Other Tkinter methods managed to find the dict out of scope, but execute_instructions threw a fit about it.
 
 class Dragged:
     """
@@ -218,12 +220,24 @@ def on_dnd_start(Event, button):
     #Pass the object to be dragged and the event to Tkdnd
     Tkdnd.dnd_start(ThingToDrag,Event)
 
+def execute_instructions(Event):
+    #TODO: Start Multi thread graphic to show that the program is running.
+    print("items: "+str(frame_dict.items()))
+    for key,value in frame_dict.items():
+        #TODO: Something like "value.instruction.execute()"
+        #TODO: Decide what to do if a frame doesn't have an instruction (blank frame). We could probably just skip it.
+        print("Executing Instructions for frame: " + str(key))
+
 Root = Tk()
 Root.title('Robot Touch Controls')
 Root.geometry('800x600')
 #Create an object whose job is to act as a TargetObject, that is, to
 # received the dropped object.
 TargetObject = Receptor()
+
+Start = Button(Root,text='Start', height=2,width=10)
+Start.pack(side=BOTTOM, pady=50)
+Start.bind('<ButtonPress>', execute_instructions)
 
 #Create a button to act as the InitiationObject and bind it to <ButtonPress> so
 # we start drag and drop when the user clicks on it.
@@ -233,19 +247,19 @@ frame.pack(side = LEFT, padx=5)
 
 #Create all the left-hand-side instruction option buttons
 Motors = Button(frame,text='Motors')
-Motors.pack(side=BOTTOM)
+Motors.pack(fill='x',side=BOTTOM)
 Motors.bind('<ButtonPress>', lambda event: on_dnd_start(event, 'Motors'))
 HeadTilt = Button(frame,text='HeadTilt')
-HeadTilt.pack(side=BOTTOM)
+HeadTilt.pack(fill='x',side=BOTTOM)
 HeadTilt.bind('<ButtonPress>', lambda event: on_dnd_start(event, 'HeadTilt'))
 HeadTurn = Button(frame,text='HeadTurn')
-HeadTurn.pack(side=BOTTOM)
+HeadTurn.pack(fill='x',side=BOTTOM)
 HeadTurn.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'HeadTurn'))
 BodyTurn = Button(frame,text='BodyTurn')
-BodyTurn.pack(side=BOTTOM)
+BodyTurn.pack(fill='x',side=BOTTOM)
 BodyTurn.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'BodyTurn'))
 Pause = Button(frame,text='Pause')
-Pause.pack(side=BOTTOM)
+Pause.pack(fill='x',side=BOTTOM)
 Pause.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'Pause'))
 Label(frame, text="Commands", fg='blue').pack(side=BOTTOM)
 
@@ -276,10 +290,6 @@ frame8.pack(side = LEFT,expand=NO,fill=None,padx=5)
 frame8.pack_propagate(False)
 
 frame_dict = {1:frame1,2:frame2,3:frame3,4:frame4,5:frame5,6:frame6,7:frame7,8:frame8}
-# CommandOne = CanvasDnd(Root,GiveDropTo=TargetObject,relief=RAISED,bd=2)
-# CommandOne.pack(side = LEFT,expand=YES,fill=BOTH)
-# CommandTwo = CanvasDnd(Root,GiveDropTo=TargetObject,relief=RAISED,bd=2)
-# CommandTwo.pack(side = LEFT,expand=NO,fill=BOTH)
 
 #Begin main program loop
 Root.mainloop()
