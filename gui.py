@@ -118,6 +118,7 @@ def create_instruction_frame(frame_num, button_name):
     remove = Button(frame, text='Remove')
     remove.pack()
     remove.bind('<ButtonPress>',lambda event: remove_frame_children(event, frame))
+    #TODO: Now you msut reset the actual instruction stored in frame.instruction.
     edit = Button(frame, text='Edit')
     edit.pack()
     edit.bind('<ButtonPress>', lambda event: settings_popup(event, frame))
@@ -160,29 +161,61 @@ def settings_popup(Event, frame):
         widget_list.append(slider)
         slider.pack()
     elif(instruct_type == "Motors Command"):
-        v = IntVar()
-        rb1 = Radiobutton(toplevel, text="Turn", padx = 20, variable=v, value=1)
-        rb1.pack()
-        rb2 = Radiobutton(toplevel, text="Forward/Backward",padx = 20, variable=v, value=2)
-        rb2.pack()
-        print(v.get())
-        if(v.get()==2):
-            print("2222")
-        elif(v.get()==1):
-            print("1111")
-        else:
-            print("Error: Radio button selection was neither choice?")
-        
+        v = StringVar()
+        v.set("Empty")
+
+        def get_choice():
+            #Destry old frames (when switching the stupid radio button)
+            for child in toplevel.winfo_children():
+                if isinstance(child, Frame):
+                    child.destroy()
+            widget_list = list()
+            bonus_frame = Frame(toplevel)
+            bonus_frame.pack()
+            selection = str(v.get())
+            print("Radio Button Choice: "+selection)
+            slider = Scale(bonus_frame, from_=SERVO_BOTTOM, to_=SERVO_TOP, tickinterval=STEP_SIZE, orient=HORIZONTAL, length=500)
+            slider.set((SERVO_BOTTOM+SERVO_TOP)/2)
+            slider2 = Scale(bonus_frame, from_=0, to_=10, orient=HORIZONTAL, length=500)
+            if(selection=="Turn"):
+                #Append instruction as a string, to be umpacked in extract_instructions
+                widget_list.append("Turn")
+                slider.configure(label="Turn Direction")
+                slider.pack()
+                slider2.configure(label="Turn Seconds")
+                slider2.pack()
+                widget_list.extend([slider,slider2])
+                print((str(len(widget_list))))
+            elif(selection=="FB"):
+                #Append instruction as a string, to be umpacked in extract_instructions
+                widget_list.append("FB")
+                slider.configure(label="Motor Speed")
+                slider.pack()
+                slider2.configure(label="Seconds of Movement")
+                slider2.pack()
+                widget_list.extend([slider,slider2])  
+                print((str(len(widget_list))))
+            else:
+                print("Error: Radio button choice in motoro selection was neither FB or Turn.")
+            
+        # I did not add these to the widget list because we only need the "turn" "FB" value (which is not containted in the widget).
+        rb1 = Radiobutton(toplevel, text="Turn", command=get_choice,padx = 20, variable=v, value="Turn")
+        rb1.pack(anchor=W)
+        rb2 = Radiobutton(toplevel, text="Forward/Backward",command=get_choice, padx = 20, variable=v, value="FB")
+        rb2.pack(anchor=W)     
     else:
         print("Error: Unrecognized instruction type: " + str(instruct_type))
         
 #Get values from sliders and buttons to set the instruction parameters for the given frame
 def extract_instructions(frame, widget_list, window):
+    print(">>>Extract insttuctions was called with list size: %s<<<" % (str(len(widget_list))))
     for wid in widget_list:
         sys.stdout.write("Window had widget of type: %s" % str(type(wid)))
         if isinstance(wid, Scale):
             sys.stdout.write(" with slider value: "+str(wid.get()))
-        sys.stdout.write('\n')
+        elif isinstance(wid, str):
+            sys.stdout.write(" with motor operation value: "+wid)
+        sys.stdout.write('\n')  
     window.destroy()
 
 #Hard coded x coordinates of each Frame to determine drop location of widget
