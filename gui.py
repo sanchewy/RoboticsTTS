@@ -60,6 +60,7 @@ class FrameDnd(Frame):
         Frame.__init__(self,Master, kw)
         self.GiveDropTo = GiveDropTo
         self.ListChildren = list()
+        #TODO: Add self.instruction reference to you instruction object class.
 
     def dnd_accept(self,Source,Event):
         # print("Frame: is ready to accept dnd.")
