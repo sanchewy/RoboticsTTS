@@ -188,23 +188,23 @@ def extract_instructions(frame, widget_list, window):
 #Hard coded x coordinates of each Frame to determine drop location of widget
 def get_frame_num(x_coor):
     win_increment = (0,0)
-    if(platform.system() == 'Windows'):
-        win_increment = (15,10)
-    if(x_coor > 95 - win_increment[0] and x_coor <= 165 - win_increment[1]): #80 - 155
+    #if(platform.system() == 'Windows'):
+    #    win_increment = (15,10)
+    if(x_coor > 110 - win_increment[0] and x_coor <= 185 - win_increment[1]): #80 - 155
         return 1
-    elif(x_coor > 175 - win_increment[0] and x_coor <= 250 - win_increment[1]): #165 - 240
+    elif(x_coor > 195 - win_increment[0] and x_coor <= 270 - win_increment[1]): #165 - 240
         return 2
-    elif(x_coor > 260 - win_increment[0] and x_coor <= 335 - win_increment[1]):
+    elif(x_coor > 280 - win_increment[0] and x_coor <= 355 - win_increment[1]):
         return 3
-    elif(x_coor > 345 - win_increment[0] and x_coor <= 420 - win_increment[1]):
+    elif(x_coor > 365 - win_increment[0] and x_coor <= 440 - win_increment[1]):
         return 4
-    elif(x_coor > 430 - win_increment[0] and x_coor <= 505 - win_increment[1]):
+    elif(x_coor > 450 - win_increment[0] and x_coor <= 525 - win_increment[1]):
         return 5
-    elif(x_coor > 515 - win_increment[0] and x_coor <= 590 - win_increment[1]):
+    elif(x_coor > 535 - win_increment[0] and x_coor <= 610 - win_increment[1]):
         return 6
-    elif(x_coor > 600 - win_increment[0] and x_coor <= 675 - win_increment[1]):
+    elif(x_coor > 620 - win_increment[0] and x_coor <= 695 - win_increment[1]):
         return 7
-    elif(x_coor > 685 - win_increment[0] and x_coor <= 765 - win_increment[1]):
+    elif(x_coor > 705 - win_increment[0] and x_coor <= 780 - win_increment[1]):
         return 8
     else:
         return -1
