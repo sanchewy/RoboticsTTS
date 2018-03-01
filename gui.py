@@ -114,10 +114,13 @@ def create_instruction_frame(frame_num, button_name):
     frame = frame_dict.get(frame_num)
     lab = Label(frame, text=button_name+" Command", fg='blue', wraplength=75)
     lab.pack()
-    # print(">>> %s <<<" % (str(type(lab))))
+    
+    #Create remove button
     remove = Button(frame, text='Remove')
     remove.pack()
     remove.bind('<ButtonPress>',lambda event: remove_frame_children(event, frame))
+    
+    #Create edit button
     edit = Button(frame, text='Edit')
     edit.pack()
     edit.bind('<ButtonPress>', lambda event: settings_popup(event, frame))
@@ -125,21 +128,27 @@ def create_instruction_frame(frame_num, button_name):
 
 #Destroys each child widget passed    
 def remove_frame_children(Event, frame):
+    #Destroy all child widgets
     for child in frame.ListChildren:
         child.destroy()
+    #Reset list of children
     del frame.ListChildren[:]
+    #TODO: Now you must reset the actual instruction stored in frame.instruction so that it doesn't maintain a reference after removal of GUI frame.
         
 #Creates a popup toplevel window for editing the settings of the instruction corresponding to frame.
 def settings_popup(Event, frame):
     widget_list = list()    #Use on toplevel window close to 'get()' all the slider properties and pass them to frame.instruction
     toplevel = Toplevel()    
-    toplevel.protocol("WM_DELETE_WINDOW", lambda: extract_instructions(frame, widget_list, toplevel))
-    toplevel.geometry("600x300+%d+%d" % (Root.winfo_x(), Root.winfo_y()))    
+    toplevel.protocol("WM_DELETE_WINDOW", lambda: extract_instructions(frame, widget_list, toplevel))  #On popup close, call extract_instructions with frame info and widget_list.
+    toplevel.geometry("600x300+%d+%d" % (Root.winfo_x(), Root.winfo_y()))   
+    
+    #Child[0] is the Label for the frame. So we can determine the type of instruction based on the label. It would have been better to do frame.instruction.type(), but we didn't have that implemented at time of GUI.
     instruct_type = frame.ListChildren[0].cget('text')
     label1 = Label(toplevel, text="Popup window for frame type "+instruct_type)
     label1.pack()
     
-    #  print(">>> %s <<<" % (str(instruct_type)))
+    #Filters on instuction_type to create an appropriate frame with sliders and buttons for servo values / pause length / motor run time.
+    #TODO: If you want, you could reference frame.instruction properties in slider.set() so that the GUI "remembers" what you set the slider to after closing and reopening the settings popup.
     if(instruct_type == "Pause Command"):
         slider = Scale(toplevel, from_=0, to_=5, orient=HORIZONTAL, label='Pause Len:', length=200)
         widget_list.append(slider)
@@ -160,32 +169,64 @@ def settings_popup(Event, frame):
         widget_list.append(slider)
         slider.pack()
     elif(instruct_type == "Motors Command"):
-        v = IntVar()
-        rb1 = Radiobutton(toplevel, text="Turn", padx = 20, variable=v, value=1)
-        rb1.pack()
-        rb2 = Radiobutton(toplevel, text="Forward/Backward",padx = 20, variable=v, value=2)
-        rb2.pack()
-        print(v.get())
-        if(v.get()==2):
-            print("2222")
-        elif(v.get()==1):
-            print("1111")
-        else:
-            print("Error: Radio button selection was neither choice?")
-        
+        v = StringVar()
+        v.set("Empty")
+
+        #Called on radio button press. Creates frame below radio buttons with appropriately named sliders. 
+        def get_choice():
+            #Destroy old frames (when switching the stupid radio button between 'FB' and 'Turn')
+            for child in toplevel.winfo_children():
+                if isinstance(child, Frame):
+                    child.destroy()
+            widget_list.clear()
+            bonus_frame = Frame(toplevel)
+            bonus_frame.pack()
+            selection = str(v.get())
+            print("Radio Button Choice: "+selection)
+            slider = Scale(bonus_frame, from_=SERVO_BOTTOM, to_=SERVO_TOP, tickinterval=STEP_SIZE, orient=HORIZONTAL, length=500)
+            slider.set((SERVO_BOTTOM+SERVO_TOP)/2)
+            slider2 = Scale(bonus_frame, from_=0, to_=10, orient=HORIZONTAL, length=500)
+            if(selection=="Turn"):
+                #Append instruction as a string, to be unpacked in extract_instructions
+                widget_list.append("Turn")
+                slider.configure(label="Turn Direction")
+                slider.pack()
+                slider2.configure(label="Turn Seconds")
+                slider2.pack()
+                widget_list.extend([slider,slider2])
+            elif(selection=="FB"):
+                #Append instruction as a string, to be unpacked in extract_instructions
+                widget_list.append("FB")
+                slider.configure(label="Motor Speed")
+                slider.pack()
+                slider2.configure(label="Seconds of Movement")
+                slider2.pack()
+                widget_list.extend([slider,slider2])  
+            else:
+                print("Error: Radio button choice in motoro selection was neither FB or Turn.")
+            
+        # I did not add these to the widget list because we only need the "turn" "FB" value (which is not contained in the widget).
+        rb1 = Radiobutton(toplevel, text="Turn", command=get_choice,padx = 20, variable=v, value="Turn")
+        rb1.pack(anchor=W)
+        rb2 = Radiobutton(toplevel, text="Forward/Backward",command=get_choice, padx = 20, variable=v, value="FB")
+        rb2.pack(anchor=W)     
     else:
         print("Error: Unrecognized instruction type: " + str(instruct_type))
         
 #Get values from sliders and buttons to set the instruction parameters for the given frame
 def extract_instructions(frame, widget_list, window):
+    #TODO: Here you know the frame. Do frame.instruction.set(wid.get) to set the servo value.
+    print(">>>Extract instructions was called with list size: %s<<<" % (str(len(widget_list))))
     for wid in widget_list:
         sys.stdout.write("Window had widget of type: %s" % str(type(wid)))
         if isinstance(wid, Scale):
             sys.stdout.write(" with slider value: "+str(wid.get()))
-        sys.stdout.write('\n')
+        elif isinstance(wid, str):
+            sys.stdout.write(" with motor operation value: "+wid)
+        sys.stdout.write('\n')  
     window.destroy()
 
-#Hard coded x coordinates of each Frame to determine drop location of widget
+#Hard coded x coordinates of each Frame to determine drop location of widget (Cannot be done simply by referencing the Event)
 def get_frame_num(x_coor):
     win_increment = (0,0)
     #if(platform.system() == 'Windows'):
@@ -220,6 +261,7 @@ def on_dnd_start(Event, button):
     #Pass the object to be dragged and the event to Tkdnd
     Tkdnd.dnd_start(ThingToDrag,Event)
 
+#Triggered on press of 'Start' button in root window. Iterates over frame_dict executes the instruction in each frame.
 def execute_instructions(Event):
     #TODO: Start Multi thread graphic to show that the program is running.
     print("items: "+str(frame_dict.items()))
@@ -228,13 +270,15 @@ def execute_instructions(Event):
         #TODO: Decide what to do if a frame doesn't have an instruction (blank frame). We could probably just skip it.
         print("Executing Instructions for frame: " + str(key))
 
+#Create main tkinter window.
 Root = Tk()
 Root.title('Robot Touch Controls')
 Root.geometry('800x600')
-#Create an object whose job is to act as a TargetObject, that is, to
-# received the dropped object.
+
+#Create an object whose job is to act as a TargetObject, that is, to received the dropped object.
 TargetObject = Receptor()
 
+#Create start button
 Start = Button(Root,text='Start', height=2,width=10)
 Start.pack(side=BOTTOM, pady=50)
 Start.bind('<ButtonPress>', execute_instructions)
@@ -245,7 +289,7 @@ frame = Frame(Root, width=100, height = 200)
 frame.pack_propagate(False)
 frame.pack(side = LEFT, padx=5)
 
-#Create all the left-hand-side instruction option buttons
+#Create all the left-hand-side instruction option buttons and labels
 Label(frame, text="Commands", fg='blue').pack()
 Motors = Button(frame,text='Motors')
 Motors.pack(fill='x')
@@ -263,7 +307,7 @@ Pause = Button(frame,text='Pause')
 Pause.pack(fill='x',)
 Pause.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'Pause'))
 
-#Create all right-hand-side frame rectangles, set them to give drops to TargetObject (Receptor()), and add them to dictionary for coordinate lookup
+#Create all right-hand-side frame rectangles, set them to give drops to TargetObject (Receptor()), and add them to dictionary for coordinate lookup through get_frame_num
 frame1 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
 frame1.pack(side = LEFT,expand=NO,fill=None,padx=5)
 frame1.pack_propagate(False)
