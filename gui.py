@@ -169,7 +169,7 @@ def settings_popup(Event, frame):
             for child in toplevel.winfo_children():
                 if isinstance(child, Frame):
                     child.destroy()
-            widget_list = list()
+            widget_list.clear()
             bonus_frame = Frame(toplevel)
             bonus_frame.pack()
             selection = str(v.get())
@@ -185,7 +185,6 @@ def settings_popup(Event, frame):
                 slider2.configure(label="Turn Seconds")
                 slider2.pack()
                 widget_list.extend([slider,slider2])
-                print((str(len(widget_list))))
             elif(selection=="FB"):
                 #Append instruction as a string, to be umpacked in extract_instructions
                 widget_list.append("FB")
@@ -194,7 +193,6 @@ def settings_popup(Event, frame):
                 slider2.configure(label="Seconds of Movement")
                 slider2.pack()
                 widget_list.extend([slider,slider2])  
-                print((str(len(widget_list))))
             else:
                 print("Error: Radio button choice in motoro selection was neither FB or Turn.")
             
@@ -208,7 +206,7 @@ def settings_popup(Event, frame):
         
 #Get values from sliders and buttons to set the instruction parameters for the given frame
 def extract_instructions(frame, widget_list, window):
-    print(">>>Extract insttuctions was called with list size: %s<<<" % (str(len(widget_list))))
+    print(">>>Extract instructions was called with list size: %s<<<" % (str(len(widget_list))))
     for wid in widget_list:
         sys.stdout.write("Window had widget of type: %s" % str(type(wid)))
         if isinstance(wid, Scale):
