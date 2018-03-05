@@ -6,7 +6,7 @@ from platform import *
 
 import PIL.Image
 import time
-import _thread
+import threading
 import touch_ctrl
 import Maestro
 
@@ -339,7 +339,8 @@ def execute_instructions():
     flag = False
 
 def start_drawing(Event):
-    _thread.start_new_thread(execute_instructions, ())
+    inst_thread = threading.Thread(target=execute_instructions, args=())
+    inst_thread.start()
 
     toplevel = Toplevel()
     toplevel.geometry("800x600+%d+%d" % (Root.winfo_x(), Root.winfo_y()))   
@@ -356,13 +357,12 @@ def start_drawing(Event):
             pass
             #toplevel.destroy()
         toplevel.after(100, update, ind)
+        if(not inst_thread.isAlive()):
+            print("Killed window")
+            toplevel.destroy()
     label = Label(toplevel)
     label.pack()
     toplevel.after(0, update, 0)
-
-    while(flag):
-        pass
-    #toplevel.destroy()
 
 #Create main tkinter window.
 Root = Tk()
