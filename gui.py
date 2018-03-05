@@ -1,8 +1,14 @@
 """
 This code demonstrates "bare bones" drag and drop
 """
-import sys
-import platform
+from sys import *
+from platform import *
+
+import PIL.Image
+import time
+import _thread
+import touch_ctrl
+import Maestro
 
 try:
     # for Python2
@@ -61,6 +67,7 @@ class FrameDnd(Frame):
         self.GiveDropTo = GiveDropTo
         self.ListChildren = list()
         #TODO: Add self.instruction reference to you instruction object class.
+        self.instruction = None
 
     def dnd_accept(self,Source,Event):
         # print("Frame: is ready to accept dnd.")
@@ -90,7 +97,7 @@ class Receptor:
         pass
         
     def dnd_motion(self,Source,Event):
-        #This is called when the mouse pointer moves withing the TargetWidget.
+        #This is called when the mouse pointer moves within the TargetWidget.
         # print ("Receptor: dnd_motion")
         pass
         
@@ -127,6 +134,18 @@ def create_instruction_frame(frame_num, button_name):
     edit.bind('<ButtonPress>', lambda event: settings_popup(event, frame))
     frame.add_child([lab,remove,edit]) # add children to list in Frame (so that we can delete them later without deleting the entire frame)
 
+	#Create instruction
+    if(button_name == "Pause"):
+        frame.instruction = touch_ctrl.Instruction(5)
+    elif(button_name == "BodyTurn"):
+        frame.instruction = touch_ctrl.Instruction(0)
+    elif(button_name == "HeadTurn"):
+        frame.instruction = touch_ctrl.Instruction(3)
+    elif(button_name == "HeadTilt"):
+        frame.instruction = touch_ctrl.Instruction(4)
+    elif(button_name == "Motors"):
+        frame.instruction = touch_ctrl.Instruction(1)
+
 #Destroys each child widget passed    
 def remove_frame_children(Event, frame):
     #Destroy all child widgets
@@ -135,7 +154,8 @@ def remove_frame_children(Event, frame):
     #Reset list of children
     del frame.ListChildren[:]
     #TODO: Now you must reset the actual instruction stored in frame.instruction so that it doesn't maintain a reference after removal of GUI frame.
-        
+    frame.instruction = None
+
 #Creates a popup toplevel window for editing the settings of the instruction corresponding to frame.
 def settings_popup(Event, frame):
     widget_list = list()    #Use on toplevel window close to 'get()' all the slider properties and pass them to frame.instruction
@@ -152,21 +172,25 @@ def settings_popup(Event, frame):
     #TODO: If you want, you could reference frame.instruction properties in slider.set() so that the GUI "remembers" what you set the slider to after closing and reopening the settings popup.
     if(instruct_type == "Pause Command"):
         slider = Scale(toplevel, from_=0, to_=5, orient=HORIZONTAL, label='Pause Len:', length=200)
+        slider.set(frame.instruction.run_time)
         widget_list.append(slider)
         slider.pack()
     elif(instruct_type == "BodyTurn Command"):
         slider = Scale(toplevel, from_=SERVO_BOTTOM, to_=SERVO_TOP, tickinterval=STEP_SIZE, orient=HORIZONTAL, label='Body Turn To:', length=500)
-        slider.set((SERVO_BOTTOM+SERVO_TOP)/2)
+        #slider.set((SERVO_BOTTOM+SERVO_TOP)/2)
+        slider.set(frame.instruction.target_val)
         widget_list.append(slider)
         slider.pack()
     elif(instruct_type == "HeadTurn Command"):
         slider = Scale(toplevel, from_=SERVO_BOTTOM, to_=SERVO_TOP, tickinterval=STEP_SIZE, orient=HORIZONTAL, label='Head Turn To:', length=500)
-        slider.set((SERVO_BOTTOM+SERVO_TOP)/2)
+        #slider.set((SERVO_BOTTOM+SERVO_TOP)/2)
+        slider.set(frame.instruction.target_val)
         widget_list.append(slider)
         slider.pack()
     elif(instruct_type == "HeadTilt Command"):
         slider = Scale(toplevel, from_=SERVO_BOTTOM, to_=SERVO_TOP, tickinterval=STEP_SIZE, orient=HORIZONTAL, label='Head Tilt To:', length=500)
-        slider.set((SERVO_BOTTOM+SERVO_TOP)/2)
+        #slider.set((SERVO_BOTTOM+SERVO_TOP)/2)
+        slider.set(frame.instruction.target_val)
         widget_list.append(slider)
         slider.pack()
     elif(instruct_type == "Motors Command"):
@@ -185,8 +209,10 @@ def settings_popup(Event, frame):
             selection = str(v.get())
             print("Radio Button Choice: "+selection)
             slider = Scale(bonus_frame, from_=SERVO_BOTTOM, to_=SERVO_TOP, tickinterval=STEP_SIZE, orient=HORIZONTAL, length=500)
-            slider.set((SERVO_BOTTOM+SERVO_TOP)/2)
+            #slider.set((SERVO_BOTTOM+SERVO_TOP)/2)
+            slider.set(frame.instruction.target_val)
             slider2 = Scale(bonus_frame, from_=0, to_=10, orient=HORIZONTAL, length=500)
+            slider.set(frame.instruction.run_time)
             if(selection=="Turn"):
                 #Append instruction as a string, to be unpacked in extract_instructions
                 widget_list.append("Turn")
@@ -222,8 +248,20 @@ def extract_instructions(frame, widget_list, window):
         sys.stdout.write("Window had widget of type: %s" % str(type(wid)))
         if isinstance(wid, Scale):
             sys.stdout.write(" with slider value: "+str(wid.get()))
+            value = wid.get()
+            if value < 3000:
+                #Set instruction run time
+                frame.instruction.run_time = value
+            else:
+                #Set Maestro servo target value
+                frame.instruction.target_val = wid.get()
         elif isinstance(wid, str):
             sys.stdout.write(" with motor operation value: "+wid)
+            #Set Maestro servo target
+            if wid == "Turn":
+                frame.instruction.target = 2
+            elif wid == "FB":
+                frame.instruction.target = 1
         sys.stdout.write('\n')  
     window.destroy()
 
@@ -262,14 +300,69 @@ def on_dnd_start(Event, button):
     #Pass the object to be dragged and the event to Tkdnd
     Tkdnd.dnd_start(ThingToDrag,Event)
 
+#Run animation when flag is True
+flag = False
+running_servo = None
+
 #Triggered on press of 'Start' button in root window. Iterates over frame_dict executes the instruction in each frame.
-def execute_instructions(Event):
+def execute_instructions():
     #TODO: Start Multi thread graphic to show that the program is running.
+
+    flag = True
+
     print("items: "+str(frame_dict.items()))
+    x = Maestro.Controller()
+    x.setTarget(0, 6000)
+    x.setTarget(1, 6000)
+    x.setTarget(2, 6000)
+    x.setTarget(3, 6000)
+    x.setTarget(4, 6000)
+
     for key,value in frame_dict.items():
         #TODO: Something like "value.instruction.execute()"
         #TODO: Decide what to do if a frame doesn't have an instruction (blank frame). We could probably just skip it.
         print("Executing Instructions for frame: " + str(key))
+        inst = value.instruction
+        if inst != None:
+            running_servo = inst.target
+            if inst.target == 5: #If the instruction is Pause
+                time.sleep(inst.run_time)
+            else:
+                inst.runInstruction(x)
+                
+    x.setTarget(0, 6000)
+    x.setTarget(1, 6000)
+    x.setTarget(2, 6000)
+    x.setTarget(3, 6000)
+    x.setTarget(4, 6000)
+
+    flag = False
+
+def start_drawing(Event):
+    _thread.start_new_thread(execute_instructions, ())
+
+    toplevel = Toplevel()
+    toplevel.geometry("800x600+%d+%d" % (Root.winfo_x(), Root.winfo_y()))   
+
+    frames = [PhotoImage(file='running.gif',format = 'gif -index %i' %(i)) for i in range(9)]
+    ind = 0
+    def update(ind):
+        frame = frames[ind]
+        ind += 1
+        if ind == 9:
+            ind = 0
+        label.configure(image=frame)
+        if not flag:
+            pass
+            #toplevel.destroy()
+        toplevel.after(100, update, ind)
+    label = Label(toplevel)
+    label.pack()
+    toplevel.after(0, update, 0)
+
+    while(flag):
+        pass
+    #toplevel.destroy()
 
 #Create main tkinter window.
 Root = Tk()
@@ -282,7 +375,7 @@ TargetObject = Receptor()
 #Create start button
 Start = Button(Root,text='Start', height=2,width=10)
 Start.pack(side=BOTTOM, pady=50)
-Start.bind('<ButtonPress>', execute_instructions)
+Start.bind('<ButtonPress>', start_drawing)
 
 #Create a button to act as the InitiationObject and bind it to <ButtonPress> so
 # we start drag and drop when the user clicks on it.
@@ -309,28 +402,28 @@ Pause.pack(fill='x',)
 Pause.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'Pause'))
 
 #Create all right-hand-side frame rectangles, set them to give drops to TargetObject (Receptor()), and add them to dictionary for coordinate lookup through get_frame_num
-frame1 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
+frame1 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
 frame1.pack(side = LEFT,expand=NO,fill=None,padx=5)
 frame1.pack_propagate(False)
-frame2 = FrameDnd(Root,width=75, height = 200, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
+frame2 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
 frame2.pack(side = LEFT,expand=NO,fill=None,padx=5)
 frame2.pack_propagate(False)
-frame3 = FrameDnd(Root,width=75, height = 200, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
+frame3 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
 frame3.pack(side = LEFT,expand=NO,fill=None,padx=5)
 frame3.pack_propagate(False)
-frame4 = FrameDnd(Root,width=75, height = 200, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
+frame4 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
 frame4.pack(side = LEFT,expand=NO,fill=None,padx=5)
 frame4.pack_propagate(False)
-frame5 = FrameDnd(Root,width=75, height = 200, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
+frame5 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
 frame5.pack(side = LEFT,expand=NO,fill=None,padx=5)
 frame5.pack_propagate(False)
-frame6 = FrameDnd(Root,width=75, height = 200, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
+frame6 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
 frame6.pack(side = LEFT,expand=NO,fill=None,padx=5)
 frame6.pack_propagate(False)
-frame7 = FrameDnd(Root,width=75, height = 200, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
+frame7 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
 frame7.pack(side = LEFT,expand=NO,fill=None,padx=5)
 frame7.pack_propagate(False)
-frame8 = FrameDnd(Root,width=75, height = 200, GiveDropTo=TargetObject,relief=RAISED, borderwidth=2)
+frame8 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
 frame8.pack(side = LEFT,expand=NO,fill=None,padx=5)
 frame8.pack_propagate(False)
 
