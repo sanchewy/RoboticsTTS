@@ -2,12 +2,13 @@ import socket
 import re
 
 class servSocket():
-    def __init__(self, port):
+    def __init__(self, port, guiInst):
         # create a socket object
         self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # get local machine name
         self.host = socket.gethostname()
         self.port = port
+        self.guiInst = guiInst      
         # bind to the port
         self.serversocket.bind((self.host, self.port))
         # queue up to 5 requests
@@ -27,5 +28,5 @@ class servSocket():
                 if bool(re.search(pattern, data)):
                     import gui
                     print("Server thread starting gui instruction execution.")
-                    gui.start_drawing()
+                    self.guiInst.start_drawing()
         

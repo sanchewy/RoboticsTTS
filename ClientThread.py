@@ -3,11 +3,11 @@ import subprocess
 
 class clientSocket():
 	def __init__(self, ipAddress, port):
-		print("CREATED SOCKET " + ipAddress + " " + port)
+		print("CREATED SOCKET " + ipAddress + " " + str(port))
 		# create a socket object
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		# connection to hostname on the port.
-		self.socket.connect((ipAddress, int(port)))
+		self.socket.connect((ipAddress, port))
 
 	def sendMessage(self, message):
 		self.socket.send((message).encode('ascii'))
