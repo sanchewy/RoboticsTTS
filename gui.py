@@ -10,6 +10,9 @@ import threading
 import touch_ctrl
 import Maestro
 
+import ClientThread
+import ServerThread
+
 try:
     # for Python2
     from Tkinter import *  ## notice capitalized T in Tkinter 
@@ -24,6 +27,8 @@ except ImportError:
 SERVO_TOP = 9000
 SERVO_BOTTOM = 3000
 STEP_SIZE = 500
+PORT = ""
+ADDRESS = ""
 
 frame_dict = {}     #I had to make this global ABOVE execute_instructions(). Other Tkinter methods managed to find the dict out of scope, but execute_instructions threw a fit about it.
 
@@ -145,6 +150,8 @@ def create_instruction_frame(frame_num, button_name):
         frame.instruction = touch_ctrl.Instruction(4)
     elif(button_name == "Motors"):
         frame.instruction = touch_ctrl.Instruction(1)
+    elif(button_name == x for x in ["Eva","Wall_E","NothingHere","GrowBolts", "Introduce"]):
+        frame.instruction = touch_ctrl.Instruction(6)
 
 #Destroys each child widget passed    
 def remove_frame_children(Event, frame):
@@ -165,6 +172,7 @@ def settings_popup(Event, frame):
     
     #Child[0] is the Label for the frame. So we can determine the type of instruction based on the label. It would have been better to do frame.instruction.type(), but we didn't have that implemented at time of GUI.
     instruct_type = frame.ListChildren[0].cget('text')
+    print("Instruction Type: "+ instruct_type)
     label1 = Label(toplevel, text="Popup window for frame type "+instruct_type)
     label1.pack()
     
@@ -236,7 +244,11 @@ def settings_popup(Event, frame):
         rb1 = Radiobutton(toplevel, text="Turn", command=get_choice,padx = 20, variable=v, value="Turn")
         rb1.pack(anchor=W)
         rb2 = Radiobutton(toplevel, text="Forward/Backward",command=get_choice, padx = 20, variable=v, value="FB")
-        rb2.pack(anchor=W)     
+        rb2.pack(anchor=W)
+    elif(instruct_type.rsplit(' ', 1)[0] == x for x in ["Eva","Wall_E","NothingHere","GrowBolts", "Introduce"]):
+        label2 = Label(toplevel, text="You can't change voice commands!")
+        label2.pack()
+        widget_list.append(instruct_type.rsplit(' ', 1)[0])
     else:
         print("Error: Unrecognized instruction type: " + str(instruct_type))
         
@@ -262,6 +274,23 @@ def extract_instructions(frame, widget_list, window):
                 frame.instruction.target = 2
             elif wid == "FB":
                 frame.instruction.target = 1
+            elif wid == "Eva":
+                frame.instruction.target = 6
+                frame.instruction.textToSpeak = "Eva"
+            elif wid == "Wall_E":
+                frame.instruction.target = 6
+                frame.instruction.textToSpeak = "Walle"
+            elif wid == "NothingHere":
+                frame.instruction.target = 6
+                frame.instruction.textToSpeak = "There is nothing here"
+            elif wid == "GrowBolts":
+                frame.instruction.target = 6
+                frame.instruction.textToSpeak = "Grow some bolts"
+            elif wid == "Introduce":
+                frame.instruction.target = 6
+                frame.instruction.textToSpeak = "Allow me to introduce myself, I am CL4P-TP"
+
+
         sys.stdout.write('\n')  
     window.destroy()
 
@@ -311,13 +340,15 @@ def execute_instructions():
     flag = True
 
     print("items: "+str(frame_dict.items()))
-    x = Maestro.Controller()
-    x.setTarget(0, 6000)
-    x.setTarget(1, 6000)
-    x.setTarget(2, 6000)
-    x.setTarget(3, 6000)
-    x.setTarget(4, 6000)
+    # x = Maestro.Controller()
+    # x.setTarget(0, 6000)
+    # x.setTarget(1, 6000)
+    # x.setTarget(2, 6000)
+    # x.setTarget(3, 6000)
+    # x.setTarget(4, 6000)
 
+    #Create network client  
+    client = ClientThread.clientSocket(ADDRESS, PORT)
     for key,value in frame_dict.items():
         #TODO: Something like "value.instruction.execute()"
         #TODO: Decide what to do if a frame doesn't have an instruction (blank frame). We could probably just skip it.
@@ -325,20 +356,23 @@ def execute_instructions():
         inst = value.instruction
         if inst != None:
             running_servo = inst.target
-            if inst.target == 5: #If the instruction is Pause
+            if inst.target == 6:
+                print("One of them was a 6")
+                client.sendMessage(inst.textToSpeak)
+            elif inst.target == 5: #If the instruction is Pause
                 time.sleep(inst.run_time)
             else:
                 inst.runInstruction(x)
                 
-    x.setTarget(0, 6000)
-    x.setTarget(1, 6000)
-    x.setTarget(2, 6000)
-    x.setTarget(3, 6000)
-    x.setTarget(4, 6000)
+    # x.setTarget(0, 6000)
+    # x.setTarget(1, 6000)
+    # x.setTarget(2, 6000)
+    # x.setTarget(3, 6000)
+    # x.setTarget(4, 6000)
 
     flag = False
 
-def start_drawing(Event):
+def start_drawing():
     inst_thread = threading.Thread(target=execute_instructions, args=())
     inst_thread.start()
 
@@ -364,70 +398,96 @@ def start_drawing(Event):
     label.pack()
     toplevel.after(0, update, 0)
 
-#Create main tkinter window.
-Root = Tk()
-Root.title('Robot Touch Controls')
-Root.geometry('800x600')
+if __name__ == "__main__":
+    #Grab Command line arguments for client server configuration
+    PORT = int(sys.argv[2])
+    ADDRESS = sys.argv[1]
 
-#Create an object whose job is to act as a TargetObject, that is, to received the dropped object.
-TargetObject = Receptor()
+    #Create server thread for listening to android.
+    # print(dir(ServeThread))
+    server = ServerThread.servSocket(int(PORT))
+    server_thread = threading.Thread(target=server.run, args=())
+    server_thread.start()
 
-#Create start button
-Start = Button(Root,text='Start', height=2,width=10)
-Start.pack(side=BOTTOM, pady=50)
-Start.bind('<ButtonPress>', start_drawing)
+    #Create main tkinter window.
+    Root = Tk()
+    Root.title('Robot Touch Controls')
+    Root.geometry('800x600')
 
-#Create a button to act as the InitiationObject and bind it to <ButtonPress> so
-# we start drag and drop when the user clicks on it.
-frame = Frame(Root, width=100, height = 200)
-frame.pack_propagate(False)
-frame.pack(side = LEFT, padx=5)
+    #Create an object whose job is to act as a TargetObject, that is, to received the dropped object.
+    TargetObject = Receptor()
 
-#Create all the left-hand-side instruction option buttons and labels
-Label(frame, text="Commands", fg='blue').pack()
-Motors = Button(frame,text='Motors')
-Motors.pack(fill='x')
-Motors.bind('<ButtonPress>', lambda event: on_dnd_start(event, 'Motors'))
-HeadTilt = Button(frame,text='HeadTilt')
-HeadTilt.pack(fill='x')
-HeadTilt.bind('<ButtonPress>', lambda event: on_dnd_start(event, 'HeadTilt'))
-HeadTurn = Button(frame,text='HeadTurn')
-HeadTurn.pack(fill='x')
-HeadTurn.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'HeadTurn'))
-BodyTurn = Button(frame,text='BodyTurn')
-BodyTurn.pack(fill='x')
-BodyTurn.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'BodyTurn'))
-Pause = Button(frame,text='Pause')
-Pause.pack(fill='x',)
-Pause.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'Pause'))
+    #Create start button
+    Start = Button(Root,text='Start', height=2,width=10)
+    Start.pack(side=BOTTOM, pady=50)
+    Start.bind('<ButtonPress>', start_drawing)
 
-#Create all right-hand-side frame rectangles, set them to give drops to TargetObject (Receptor()), and add them to dictionary for coordinate lookup through get_frame_num
-frame1 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
-frame1.pack(side = LEFT,expand=NO,fill=None,padx=5)
-frame1.pack_propagate(False)
-frame2 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
-frame2.pack(side = LEFT,expand=NO,fill=None,padx=5)
-frame2.pack_propagate(False)
-frame3 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
-frame3.pack(side = LEFT,expand=NO,fill=None,padx=5)
-frame3.pack_propagate(False)
-frame4 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
-frame4.pack(side = LEFT,expand=NO,fill=None,padx=5)
-frame4.pack_propagate(False)
-frame5 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
-frame5.pack(side = LEFT,expand=NO,fill=None,padx=5)
-frame5.pack_propagate(False)
-frame6 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
-frame6.pack(side = LEFT,expand=NO,fill=None,padx=5)
-frame6.pack_propagate(False)
-frame7 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
-frame7.pack(side = LEFT,expand=NO,fill=None,padx=5)
-frame7.pack_propagate(False)
-frame8 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
-frame8.pack(side = LEFT,expand=NO,fill=None,padx=5)
-frame8.pack_propagate(False)
+    #Create a button to act as the InitiationObject and bind it to <ButtonPress> so
+    # we start drag and drop when the user clicks on it.
+    frame = Frame(Root, width=100, height = 400)
+    frame.pack_propagate(False)
+    frame.pack(side = LEFT, padx=5)
 
-frame_dict = {1:frame1,2:frame2,3:frame3,4:frame4,5:frame5,6:frame6,7:frame7,8:frame8}
+    #Create all the left-hand-side instruction option buttons and labels
+    Label(frame, text="Commands", fg='blue').pack()
+    Motors = Button(frame,text='Motors')
+    Motors.pack(fill='x')
+    Motors.bind('<ButtonPress>', lambda event: on_dnd_start(event, 'Motors'))
+    HeadTilt = Button(frame,text='HeadTilt')
+    HeadTilt.pack(fill='x')
+    HeadTilt.bind('<ButtonPress>', lambda event: on_dnd_start(event, 'HeadTilt'))
+    HeadTurn = Button(frame,text='HeadTurn')
+    HeadTurn.pack(fill='x')
+    HeadTurn.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'HeadTurn'))
+    BodyTurn = Button(frame,text='BodyTurn')
+    BodyTurn.pack(fill='x')
+    BodyTurn.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'BodyTurn'))
+    Pause = Button(frame,text='Pause')
+    Pause.pack(fill='x',)
+    Pause.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'Pause'))
+    Wall_E = Button(frame,text='Wall_E')
+    Wall_E.pack(fill='x',)
+    Wall_E.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'Wall_E'))        #Walle
+    Eva = Button(frame,text='Eva')
+    Eva.pack(fill='x',)
+    Eva.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'Eva'))          #Eva
+    NothingHere = Button(frame,text='NothingHere')
+    NothingHere.pack(fill='x',)
+    NothingHere.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'NothingHere'))      #Nothing here
+    GrowBolts = Button(frame,text='GrowBolts')
+    GrowBolts.pack(fill='x',)
+    GrowBolts.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'GrowBolts'))      #Grow some bolts
+    Introduce = Button(frame,text='Introduce')
+    Introduce.pack(fill='x',)
+    Introduce.bind('<ButtonPress>',lambda event: on_dnd_start(event, 'Introduce'))      #Allow me to introduce myself, I am CL4P-TP
 
-#Begin main program loop
-Root.mainloop()
+    #Create all right-hand-side frame rectangles, set them to give drops to TargetObject (Receptor()), and add them to dictionary for coordinate lookup through get_frame_num
+    frame1 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
+    frame1.pack(side = LEFT,expand=NO,fill=None,padx=5)
+    frame1.pack_propagate(False)
+    frame2 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
+    frame2.pack(side = LEFT,expand=NO,fill=None,padx=5)
+    frame2.pack_propagate(False)
+    frame3 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
+    frame3.pack(side = LEFT,expand=NO,fill=None,padx=5)
+    frame3.pack_propagate(False)
+    frame4 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
+    frame4.pack(side = LEFT,expand=NO,fill=None,padx=5)
+    frame4.pack_propagate(False)
+    frame5 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
+    frame5.pack(side = LEFT,expand=NO,fill=None,padx=5)
+    frame5.pack_propagate(False)
+    frame6 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
+    frame6.pack(side = LEFT,expand=NO,fill=None,padx=5)
+    frame6.pack_propagate(False)
+    frame7 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
+    frame7.pack(side = LEFT,expand=NO,fill=None,padx=5)
+    frame7.pack_propagate(False)
+    frame8 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
+    frame8.pack(side = LEFT,expand=NO,fill=None,padx=5)
+    frame8.pack_propagate(False)
+
+    frame_dict = {1:frame1,2:frame2,3:frame3,4:frame4,5:frame5,6:frame6,7:frame7,8:frame8}
+
+    #Begin main program loop
+    Root.mainloop()

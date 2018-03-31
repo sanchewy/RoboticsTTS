@@ -12,6 +12,7 @@ class Instruction():
         self.target = target
         self.target_val = target_val
         self.run_time = run_time
+        self.textToSpeak = None
 
     def setTargetVal(self, target_val):
         self.target_val = target_val
