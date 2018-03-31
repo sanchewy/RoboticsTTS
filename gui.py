@@ -7,8 +7,8 @@ from platform import *
 import PIL.Image
 import time
 import threading
-import touch_ctrl
-import Maestro
+#import touch_ctrl
+#import Maestro
 
 import traceback
 
@@ -257,10 +257,45 @@ class gui():
             rb1.pack(anchor=W)
             rb2 = Radiobutton(toplevel, text="Forward/Backward",command=get_choice, padx = 20, variable=v, value="FB")
             rb2.pack(anchor=W)
-        elif(instruct_type.rsplit(' ', 1)[0] == x for x in ["Eva","Wall_E","NothingHere","GrowBolts", "Introduce"]):
-            label2 = Label(toplevel, text="You can't change voice commands!")
+        elif(instruct_type == "TTS Command"):
+            label2 = Label(toplevel, text="Select a voice command!")
             label2.pack()
-            widget_list.append(instruct_type.rsplit(' ', 1)[0])
+            
+            v = StringVar()
+            v.set("Empty")
+
+            #Called on radio button press. Creates frame below radio buttons with appropriately named sliders. 
+            def get_choice():
+                #Destroy old frames (when switching the stupid radio button between 'FB' and 'Turn')
+                for child in toplevel.winfo_children():
+                    if isinstance(child, Frame):
+                        child.destroy()
+                widget_list.clear()
+                bonus_frame = Frame(toplevel)
+                bonus_frame.pack()
+                selection = str(v.get())
+                if(selection=="Wall_E"):
+                    widget_list.append("Wall_E")
+                elif(selection=="Eva"):
+                    widget_list.append("Eva")
+                elif(selection=="NothingHere"):
+                    widget_list.append("NothingHere")
+                elif(selection=="GrowBolts"):
+                    widget_list.append("GrowBolts")
+                elif(selection=="Introduce"):
+                    widget_list.append("Introduce") 
+                else:
+                    print("Error: Radio button choice in motoro selection was neither FB or Turn.")
+                rb1 = Radiobutton(toplevel, text="Wall_E", command=get_choice,padx = 20, variable=v, value="Wall_E")
+                rb1.grid(row=0)
+                rb2 = Radiobutton(toplevel, text="Eva",command=get_choice, padx = 20, variable=v, value="Eva")
+                rb2.grid(row=1)
+                rb3 = Radiobutton(toplevel, text="NothingHere", command=get_choice,padx = 20, variable=v, value="NothingHere")
+                rb3.grid(row=0, column=1)
+                rb4 = Radiobutton(toplevel, text="GrowBolts",command=get_choice, padx = 20, variable=v, value="GrowBolts")
+                rb4.grid(row=1, column=1)
+                rb5 = Radiobutton(toplevel, text="Introduce", command=get_choice,padx = 20, variable=v, value="Introduce")
+                rb5.grid(row=2)
         else:
             print("Error: Unrecognized instruction type:" + str(instruct_type))
             
@@ -455,21 +490,21 @@ if __name__ == "__main__":
     Pause = Button(frame,text='Pause')
     Pause.pack(fill='x',)
     Pause.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'Pause'))
-    Wall_E = Button(frame,text='Wall_E')
-    Wall_E.pack(fill='x',)
-    Wall_E.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'Wall_E'))        #Walle
-    Eva = Button(frame,text='Eva')
-    Eva.pack(fill='x',)
-    Eva.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'Eva'))          #Eva
-    NothingHere = Button(frame,text='NothingHere')
-    NothingHere.pack(fill='x',)
-    NothingHere.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'NothingHere'))      #Nothing here
-    GrowBolts = Button(frame,text='GrowBolts')
-    GrowBolts.pack(fill='x',)
-    GrowBolts.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'GrowBolts'))      #Grow some bolts
-    Introduce = Button(frame,text='Introduce')
-    Introduce.pack(fill='x',)
-    Introduce.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'Introduce'))      #Allow me to introduce myself, I am CL4P-TP
+    TTS = Button(frame,text='TTS')
+    TTS.pack(fill='x',)
+    TTS.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'TTS'))        #Walle
+#    Eva = Button(frame,text='Eva')
+#    Eva.pack(fill='x',)
+#    Eva.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'Eva'))          #Eva
+#    NothingHere = Button(frame,text='NothingHere')
+#    NothingHere.pack(fill='x',)
+#    NothingHere.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'NothingHere'))      #Nothing here
+#    GrowBolts = Button(frame,text='GrowBolts')
+#    GrowBolts.pack(fill='x',)
+#    GrowBolts.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'GrowBolts'))      #Grow some bolts
+#    Introduce = Button(frame,text='Introduce')
+#    Introduce.pack(fill='x',)
+#    Introduce.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'Introduce'))      #Allow me to introduce myself, I am CL4P-TP
 
     #Create all right-hand-side frame rectangles, set them to give drops to TargetObject (Receptor()), and add them to dictionary for coordinate lookup through get_frame_num
     frame1 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
