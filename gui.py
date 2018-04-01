@@ -7,8 +7,8 @@ from platform import *
 import PIL.Image
 import time
 import threading
-#import touch_ctrl
-#import Maestro
+import touch_ctrl
+import Maestro
 
 import traceback
 
@@ -132,7 +132,6 @@ class gui():
         #Run animation when flag is True
         self.flag = False
         self.running_servo = None
-        self.inst_thread = threading.Thread(target=self.execute_instructions, args=())
 
     #Creates instruction frame with label name and remove and edit buttons at Frame<frame_num>
     def create_instruction_frame(self, frame_num, button_name):
@@ -258,8 +257,8 @@ class gui():
             rb2 = Radiobutton(toplevel, text="Forward/Backward",command=get_choice, padx = 20, variable=v, value="FB")
             rb2.pack(anchor=W)
         elif(instruct_type == "TTS Command"):
-            label2 = Label(toplevel, text="Select a voice command!")
-            label2.pack()
+            # label2 = Label(toplevel, text="Select a voice command!")
+            # label2.pack()
             
             v = StringVar()
             v.set("Empty")
@@ -286,16 +285,17 @@ class gui():
                     widget_list.append("Introduce") 
                 else:
                     print("Error: Radio button choice in motoro selection was neither FB or Turn.")
-                rb1 = Radiobutton(toplevel, text="Wall_E", command=get_choice,padx = 20, variable=v, value="Wall_E")
-                rb1.grid(row=0)
-                rb2 = Radiobutton(toplevel, text="Eva",command=get_choice, padx = 20, variable=v, value="Eva")
-                rb2.grid(row=1)
-                rb3 = Radiobutton(toplevel, text="NothingHere", command=get_choice,padx = 20, variable=v, value="NothingHere")
-                rb3.grid(row=0, column=1)
-                rb4 = Radiobutton(toplevel, text="GrowBolts",command=get_choice, padx = 20, variable=v, value="GrowBolts")
-                rb4.grid(row=1, column=1)
-                rb5 = Radiobutton(toplevel, text="Introduce", command=get_choice,padx = 20, variable=v, value="Introduce")
-                rb5.grid(row=2)
+
+            rb1 = Radiobutton(toplevel, text="Wall_E", command=get_choice,padx = 20, variable=v, value="Wall_E")
+            rb1.pack(anchor=W)
+            rb2 = Radiobutton(toplevel, text="Eva",command=get_choice, padx = 20, variable=v, value="Eva")
+            rb2.pack(anchor=W)
+            rb3 = Radiobutton(toplevel, text="NothingHere", command=get_choice,padx = 20, variable=v, value="NothingHere")
+            rb3.pack(anchor=W)
+            rb4 = Radiobutton(toplevel, text="GrowBolts",command=get_choice, padx = 20, variable=v, value="GrowBolts")
+            rb4.pack(anchor=W)
+            rb5 = Radiobutton(toplevel, text="Introduce", command=get_choice,padx = 20, variable=v, value="Introduce")
+            rb5.pack(anchor=W)
         else:
             print("Error: Unrecognized instruction type:" + str(instruct_type))
             
@@ -400,8 +400,9 @@ class gui():
             if inst != None:
                 self.running_servo = inst.target
                 if inst.target == 6:
-                    print("One of them was a 6")
+                    print("One of instructions was a voice command.")
                     client.sendMessage(inst.textToSpeak)
+                    time.sleep(.05)
                 elif inst.target == 5: #If the instruction is Pause
                     time.sleep(inst.run_time)
                 else:
@@ -416,6 +417,7 @@ class gui():
         self.flag = False
 
     def start_drawing(self):
+        self.inst_thread = threading.Thread(target=self.execute_instructions, args=())
         self.inst_thread.start()
 
         toplevel = Toplevel()
@@ -469,7 +471,7 @@ if __name__ == "__main__":
 
     #Create a button to act as the InitiationObject and bind it to <ButtonPress> so
     # we start drag and drop when the user clicks on it.
-    frame = Frame(Root, width=100, height = 400)
+    frame = Frame(Root, width=100, height = 200)
     frame.pack_propagate(False)
     frame.pack(side = LEFT, padx=5)
 

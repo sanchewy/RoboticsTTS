@@ -15,18 +15,22 @@ class servSocket():
         self.serversocket.listen(5)
 
     def run(self):
-        # establish a server connection
-        clientsocket,addr = self.serversocket.accept()
-        print("Got a connection from %s" % str(addr))
-
         while True:
-            # Receive message from android phone
-            data = clientsocket.recv(1024).decode("ascii")
-            pattern = re.compile(".*start.*")    #This should match all phrases with the word "start" in them
-            if data:
-                print("Server Data: " + data + " Match: " + str(bool(re.search(pattern, data))))
-                if bool(re.search(pattern, data)):
-                    import gui
-                    print("Server thread starting gui instruction execution.")
-                    self.guiInst.start_drawing()
+            # establish a server connection
+            clientsocket,addr = self.serversocket.accept()
+            print("Got a connection from %s" % str(addr))
+
+            while True:
+                # Receive message from android phone
+                data = clientsocket.recv(1024).decode("ascii")
+                pattern = re.compile(".*start.*")    #This should match all phrases with the word "start" in them
+                if data:
+                    print("Server Data: " + data + " Match: " + str(bool(re.search(pattern, data))))
+                    if bool(re.search(pattern, data)):
+                        import gui
+                        print("Server thread starting gui instruction execution.")
+                        self.guiInst.start_drawing()
+                else:
+                    break
+            clientsocket.close()
         
