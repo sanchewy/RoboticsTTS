@@ -13,6 +13,7 @@ class Instruction():
         self.target_val = target_val
         self.run_time = run_time
         self.textToSpeak = None
+        self.speechToText = None
 
     def setTargetVal(self, target_val):
         self.target_val = target_val
@@ -26,9 +27,21 @@ class Instruction():
         self.array_pos = array_pos
 
     def runInstruction(self, maestro):
-        maestro.setTarget(self.target, self.target_val)
-        time.sleep(self.run_time)
-        slowDown(self.target, self.target_val, maestro)
+        if target == 7:     #Special STT instruction
+            if self.speechToText == "GoHome":
+                pass
+            elif self.speechToText == "SpinCircle":
+                this.spinCircle(maestro)
+        else:
+            maestro.setTarget(self.target, self.target_val)
+            time.sleep(self.run_time)
+            slowDown(self.target, self.target_val, maestro)
+
+def spinCircle(maestro):
+    print("---------------- Spin circle was called -------------")
+    maestro.setTarget(2, 4500)
+    time.sleep(2)
+    slowDown(2, 4500, maestro)
 
 def getInstruction():
     i = 0

@@ -9,7 +9,7 @@ import time
 import threading
 import touch_ctrl
 import Maestro
-
+import queue
 import traceback
 
 import ClientThread
@@ -296,6 +296,31 @@ class gui():
             rb4.pack(anchor=W)
             rb5 = Radiobutton(toplevel, text="Introduce", command=get_choice,padx = 20, variable=v, value="Introduce")
             rb5.pack(anchor=W)
+        elif(instruct_type == "STT Command"):
+            v = StringVar()
+            v.set("Empty")
+
+            #Called on radio button press. Creates frame below radio buttons with appropriately named sliders. 
+            def get_choice():
+                #Destroy old frames (when switching the stupid radio button between 'FB' and 'Turn')
+                for child in toplevel.winfo_children():
+                    if isinstance(child, Frame):
+                        child.destroy()
+                widget_list.clear()
+                bonus_frame = Frame(toplevel)
+                bonus_frame.pack()
+                selection = str(v.get())
+                if(selection=="GoHome"):
+                    widget_list.append("GoHome")
+                elif(selection=="SpinCircle"):
+                    widget_list.append("SpinCircle")
+                else:
+                    print("Error: Radio button choice in motoro selection was neither FB or Turn.")
+
+            rb1 = Radiobutton(toplevel, text="GoHome", command=get_choice,padx = 20, variable=v, value="GoHome")
+            rb1.pack(anchor=W)
+            rb2 = Radiobutton(toplevel, text="SpinCircle",command=get_choice, padx = 20, variable=v, value="SpinCircle")
+            rb2.pack(anchor=W)
         else:
             print("Error: Unrecognized instruction type:" + str(instruct_type))
             
@@ -336,7 +361,12 @@ class gui():
                 elif wid == "Introduce":
                     frame.instruction.target = 6
                     frame.instruction.textToSpeak = "Allow me to introduce myself, I am CL4P-TP"
-
+                elif wid == "GoHome":
+                    frame.instruction.target = 7
+                    frame.instruction.speechToText = "GoHome"
+                elif wid == "SpinCircle":
+                    frame.instruction.target = 7
+                    frame.instruction.speechToText = "SpinCircle"
 
             sys.stdout.write('\n')  
         window.destroy()
@@ -382,13 +412,19 @@ class gui():
 
         self.flag = True
 
+        while not STTqueue.empty():        #Empty the thread queue incase there were some STT messages there.
+            try:
+                STTqueue.get(False)
+            except Empty:
+                continue
+
         print("items: "+str(self.frame_dict.items()))
-        # x = Maestro.Controller()
-        # x.setTarget(0, 6000)
-        # x.setTarget(1, 6000)
-        # x.setTarget(2, 6000)
-        # x.setTarget(3, 6000)
-        # x.setTarget(4, 6000)
+        x = Maestro.Controller()
+        x.setTarget(0, 6000)
+        x.setTarget(1, 6000)
+        x.setTarget(2, 6000)
+        x.setTarget(3, 6000)
+        x.setTarget(4, 6000)
 
         #Create network client  
         client = ClientThread.clientSocket(self.ADDRESS, self.PORT)
@@ -399,7 +435,12 @@ class gui():
             inst = value.instruction
             if inst != None:
                 self.running_servo = inst.target
-                if inst.target == 6:
+                if inst.target == 7:        #STT instruction
+                    print("One of the instructions was a speech to text command.")
+                    while not (STTqueue.get() == inst.speechToText):       #wait till server receives STT message containing inst.speechToText
+                        pass
+                    inst.runInstruction(x)
+                elif inst.target == 6:        #TTS instruction
                     print("One of instructions was a voice command.")
                     client.sendMessage(inst.textToSpeak)
                     time.sleep(.05)
@@ -408,11 +449,11 @@ class gui():
                 else:
                     inst.runInstruction(x)
                     
-        # x.setTarget(0, 6000)
-        # x.setTarget(1, 6000)
-        # x.setTarget(2, 6000)
-        # x.setTarget(3, 6000)
-        # x.setTarget(4, 6000)
+        x.setTarget(0, 6000)
+        x.setTarget(1, 6000)
+        x.setTarget(2, 6000)
+        x.setTarget(3, 6000)
+        x.setTarget(4, 6000)
 
         self.flag = False
 
@@ -452,7 +493,8 @@ if __name__ == "__main__":
 
     #Create server thread for listening to android.
     # print(dir(ServeThread))
-    server = ServerThread.servSocket(guiInst.PORT, guiInst)
+    STTqueue = queue.Queue()
+    server = ServerThread.servSocket(guiInst.PORT, guiInst, STTqueue)
     server_thread = threading.Thread(target=server.run, args=())
     server_thread.start()
 
@@ -471,7 +513,7 @@ if __name__ == "__main__":
 
     #Create a button to act as the InitiationObject and bind it to <ButtonPress> so
     # we start drag and drop when the user clicks on it.
-    frame = Frame(Root, width=100, height = 200)
+    frame = Frame(Root, width=100, height = 220)
     frame.pack_propagate(False)
     frame.pack(side = LEFT, padx=5)
 
@@ -494,7 +536,10 @@ if __name__ == "__main__":
     Pause.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'Pause'))
     TTS = Button(frame,text='TTS')
     TTS.pack(fill='x',)
-    TTS.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'TTS'))        #Walle
+    TTS.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'TTS'))        
+    STT = Button(frame,text='STT')
+    STT.pack(fill='x',)
+    STT.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'STT')) 
 #    Eva = Button(frame,text='Eva')
 #    Eva.pack(fill='x',)
 #    Eva.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'Eva'))          #Eva
