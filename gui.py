@@ -9,7 +9,7 @@ import time
 import threading
 import touch_ctrl
 import Maestro
-
+import queue
 import traceback
 
 import ClientThread
@@ -132,7 +132,6 @@ class gui():
         #Run animation when flag is True
         self.flag = False
         self.running_servo = None
-        self.inst_thread = threading.Thread(target=self.execute_instructions, args=())
 
     #Creates instruction frame with label name and remove and edit buttons at Frame<frame_num>
     def create_instruction_frame(self, frame_num, button_name):
@@ -257,10 +256,71 @@ class gui():
             rb1.pack(anchor=W)
             rb2 = Radiobutton(toplevel, text="Forward/Backward",command=get_choice, padx = 20, variable=v, value="FB")
             rb2.pack(anchor=W)
-        elif(instruct_type.rsplit(' ', 1)[0] == x for x in ["Eva","Wall_E","NothingHere","GrowBolts", "Introduce"]):
-            label2 = Label(toplevel, text="You can't change voice commands!")
-            label2.pack()
-            widget_list.append(instruct_type.rsplit(' ', 1)[0])
+        elif(instruct_type == "TTS Command"):
+            # label2 = Label(toplevel, text="Select a voice command!")
+            # label2.pack()
+            
+            v = StringVar()
+            v.set("Empty")
+
+            #Called on radio button press. Creates frame below radio buttons with appropriately named sliders. 
+            def get_choice():
+                #Destroy old frames (when switching the stupid radio button between 'FB' and 'Turn')
+                for child in toplevel.winfo_children():
+                    if isinstance(child, Frame):
+                        child.destroy()
+                widget_list.clear()
+                bonus_frame = Frame(toplevel)
+                bonus_frame.pack()
+                selection = str(v.get())
+                if(selection=="Wall_E"):
+                    widget_list.append("Wall_E")
+                elif(selection=="Eva"):
+                    widget_list.append("Eva")
+                elif(selection=="NothingHere"):
+                    widget_list.append("NothingHere")
+                elif(selection=="GrowBolts"):
+                    widget_list.append("GrowBolts")
+                elif(selection=="Introduce"):
+                    widget_list.append("Introduce") 
+                else:
+                    print("Error: Radio button choice in motoro selection was neither FB or Turn.")
+
+            rb1 = Radiobutton(toplevel, text="Wall_E", command=get_choice,padx = 20, variable=v, value="Wall_E")
+            rb1.pack(anchor=W)
+            rb2 = Radiobutton(toplevel, text="Eva",command=get_choice, padx = 20, variable=v, value="Eva")
+            rb2.pack(anchor=W)
+            rb3 = Radiobutton(toplevel, text="NothingHere", command=get_choice,padx = 20, variable=v, value="NothingHere")
+            rb3.pack(anchor=W)
+            rb4 = Radiobutton(toplevel, text="GrowBolts",command=get_choice, padx = 20, variable=v, value="GrowBolts")
+            rb4.pack(anchor=W)
+            rb5 = Radiobutton(toplevel, text="Introduce", command=get_choice,padx = 20, variable=v, value="Introduce")
+            rb5.pack(anchor=W)
+        elif(instruct_type == "STT Command"):
+            v = StringVar()
+            v.set("Empty")
+
+            #Called on radio button press. Creates frame below radio buttons with appropriately named sliders. 
+            def get_choice():
+                #Destroy old frames (when switching the stupid radio button between 'FB' and 'Turn')
+                for child in toplevel.winfo_children():
+                    if isinstance(child, Frame):
+                        child.destroy()
+                widget_list.clear()
+                bonus_frame = Frame(toplevel)
+                bonus_frame.pack()
+                selection = str(v.get())
+                if(selection=="GoHome"):
+                    widget_list.append("GoHome")
+                elif(selection=="SpinCircle"):
+                    widget_list.append("SpinCircle")
+                else:
+                    print("Error: Radio button choice in motoro selection was neither FB or Turn.")
+
+            rb1 = Radiobutton(toplevel, text="GoHome", command=get_choice,padx = 20, variable=v, value="GoHome")
+            rb1.pack(anchor=W)
+            rb2 = Radiobutton(toplevel, text="SpinCircle",command=get_choice, padx = 20, variable=v, value="SpinCircle")
+            rb2.pack(anchor=W)
         else:
             print("Error: Unrecognized instruction type:" + str(instruct_type))
             
@@ -301,7 +361,12 @@ class gui():
                 elif wid == "Introduce":
                     frame.instruction.target = 6
                     frame.instruction.textToSpeak = "Allow me to introduce myself, I am CL4P-TP"
-
+                elif wid == "GoHome":
+                    frame.instruction.target = 7
+                    frame.instruction.speechToText = "GoHome"
+                elif wid == "SpinCircle":
+                    frame.instruction.target = 7
+                    frame.instruction.speechToText = "SpinCircle"
 
             sys.stdout.write('\n')  
         window.destroy()
@@ -347,13 +412,19 @@ class gui():
 
         self.flag = True
 
+        while not STTqueue.empty():        #Empty the thread queue incase there were some STT messages there.
+            try:
+                STTqueue.get(False)
+            except Empty:
+                continue
+
         print("items: "+str(self.frame_dict.items()))
-        # x = Maestro.Controller()
-        # x.setTarget(0, 6000)
-        # x.setTarget(1, 6000)
-        # x.setTarget(2, 6000)
-        # x.setTarget(3, 6000)
-        # x.setTarget(4, 6000)
+        x = Maestro.Controller()
+        x.setTarget(0, 6000)
+        x.setTarget(1, 6000)
+        x.setTarget(2, 6000)
+        x.setTarget(3, 6000)
+        x.setTarget(4, 6000)
 
         #Create network client  
         client = ClientThread.clientSocket(self.ADDRESS, self.PORT)
@@ -364,23 +435,30 @@ class gui():
             inst = value.instruction
             if inst != None:
                 self.running_servo = inst.target
-                if inst.target == 6:
-                    print("One of them was a 6")
+                if inst.target == 7:        #STT instruction
+                    print("One of the instructions was a speech to text command.")
+                    while not (STTqueue.get() == inst.speechToText):       #wait till server receives STT message containing inst.speechToText
+                        pass
+                    inst.runInstruction(x)
+                elif inst.target == 6:        #TTS instruction
+                    print("One of instructions was a voice command.")
                     client.sendMessage(inst.textToSpeak)
+                    time.sleep(.05)
                 elif inst.target == 5: #If the instruction is Pause
                     time.sleep(inst.run_time)
                 else:
                     inst.runInstruction(x)
                     
-        # x.setTarget(0, 6000)
-        # x.setTarget(1, 6000)
-        # x.setTarget(2, 6000)
-        # x.setTarget(3, 6000)
-        # x.setTarget(4, 6000)
+        x.setTarget(0, 6000)
+        x.setTarget(1, 6000)
+        x.setTarget(2, 6000)
+        x.setTarget(3, 6000)
+        x.setTarget(4, 6000)
 
         self.flag = False
 
     def start_drawing(self):
+        self.inst_thread = threading.Thread(target=self.execute_instructions, args=())
         self.inst_thread.start()
 
         toplevel = Toplevel()
@@ -415,7 +493,8 @@ if __name__ == "__main__":
 
     #Create server thread for listening to android.
     # print(dir(ServeThread))
-    server = ServerThread.servSocket(guiInst.PORT, guiInst)
+    STTqueue = queue.Queue()
+    server = ServerThread.servSocket(guiInst.PORT, guiInst, STTqueue)
     server_thread = threading.Thread(target=server.run, args=())
     server_thread.start()
 
@@ -434,7 +513,7 @@ if __name__ == "__main__":
 
     #Create a button to act as the InitiationObject and bind it to <ButtonPress> so
     # we start drag and drop when the user clicks on it.
-    frame = Frame(Root, width=100, height = 400)
+    frame = Frame(Root, width=100, height = 220)
     frame.pack_propagate(False)
     frame.pack(side = LEFT, padx=5)
 
@@ -455,21 +534,24 @@ if __name__ == "__main__":
     Pause = Button(frame,text='Pause')
     Pause.pack(fill='x',)
     Pause.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'Pause'))
-    Wall_E = Button(frame,text='Wall_E')
-    Wall_E.pack(fill='x',)
-    Wall_E.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'Wall_E'))        #Walle
-    Eva = Button(frame,text='Eva')
-    Eva.pack(fill='x',)
-    Eva.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'Eva'))          #Eva
-    NothingHere = Button(frame,text='NothingHere')
-    NothingHere.pack(fill='x',)
-    NothingHere.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'NothingHere'))      #Nothing here
-    GrowBolts = Button(frame,text='GrowBolts')
-    GrowBolts.pack(fill='x',)
-    GrowBolts.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'GrowBolts'))      #Grow some bolts
-    Introduce = Button(frame,text='Introduce')
-    Introduce.pack(fill='x',)
-    Introduce.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'Introduce'))      #Allow me to introduce myself, I am CL4P-TP
+    TTS = Button(frame,text='TTS')
+    TTS.pack(fill='x',)
+    TTS.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'TTS'))        
+    STT = Button(frame,text='STT')
+    STT.pack(fill='x',)
+    STT.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'STT')) 
+#    Eva = Button(frame,text='Eva')
+#    Eva.pack(fill='x',)
+#    Eva.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'Eva'))          #Eva
+#    NothingHere = Button(frame,text='NothingHere')
+#    NothingHere.pack(fill='x',)
+#    NothingHere.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'NothingHere'))      #Nothing here
+#    GrowBolts = Button(frame,text='GrowBolts')
+#    GrowBolts.pack(fill='x',)
+#    GrowBolts.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'GrowBolts'))      #Grow some bolts
+#    Introduce = Button(frame,text='Introduce')
+#    Introduce.pack(fill='x',)
+#    Introduce.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'Introduce'))      #Allow me to introduce myself, I am CL4P-TP
 
     #Create all right-hand-side frame rectangles, set them to give drops to TargetObject (Receptor()), and add them to dictionary for coordinate lookup through get_frame_num
     frame1 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
