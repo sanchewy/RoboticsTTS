@@ -1,13 +1,18 @@
 import socket
 import re
 from multiprocessing import Queue
+import os
 
 class servSocket():
     def __init__(self, port, guiInst, outputQueue):
         # create a socket object
         self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # get local machine name
-        self.host = socket.gethostname()
+        gw = os.popen("ip -4 route show default").read().split()
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect((gw[2], 0))
+        ipaddr = s.getsockname()[0]    
+        self.host = ipaddr
         self.port = port
         self.guiInst = guiInst      
         # bind to the port
@@ -19,6 +24,7 @@ class servSocket():
     def run(self):
         while True:
             # establish a server connection
+            print("Tried to make connection")
             clientsocket,addr = self.serversocket.accept()
             print("Got a connection from %s" % str(addr))
 

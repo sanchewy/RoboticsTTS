@@ -348,19 +348,19 @@ class gui():
                     frame.instruction.target = 1
                 elif wid == "Eva":
                     frame.instruction.target = 6
-                    frame.instruction.textToSpeak = "Eva"
+                    frame.instruction.textToSpeak = "Eeeeeva\r\n"
                 elif wid == "Wall_E":
                     frame.instruction.target = 6
-                    frame.instruction.textToSpeak = "Walle"
+                    frame.instruction.textToSpeak = "Walleeeeee\r\n"
                 elif wid == "NothingHere":
                     frame.instruction.target = 6
-                    frame.instruction.textToSpeak = "There is nothing here"
+                    frame.instruction.textToSpeak = "There is nothing here\r\n"
                 elif wid == "GrowBolts":
                     frame.instruction.target = 6
-                    frame.instruction.textToSpeak = "Grow some bolts"
+                    frame.instruction.textToSpeak = "Grow some bolts\r\n"
                 elif wid == "Introduce":
                     frame.instruction.target = 6
-                    frame.instruction.textToSpeak = "Allow me to introduce myself, I am CL4P-TP"
+                    frame.instruction.textToSpeak = "Allow me to introduce myself, I am CL4P-TP\r\n"
                 elif wid == "GoHome":
                     frame.instruction.target = 7
                     frame.instruction.speechToText = "GoHome"
@@ -426,8 +426,8 @@ class gui():
         x.setTarget(3, 6000)
         x.setTarget(4, 6000)
 
-        #Create network client  
-        client = ClientThread.clientSocket(self.ADDRESS, self.PORT)
+        #Create network client
+        client = ClientThread.clientSocket(self.ADDRESS, self.PORT) 
         for key,value in self.frame_dict.items():
             #TODO: Something like "value.instruction.execute()"
             #TODO: Decide what to do if a frame doesn't have an instruction (blank frame). We could probably just skip it.
@@ -435,19 +435,30 @@ class gui():
             inst = value.instruction
             if inst != None:
                 self.running_servo = inst.target
-                if inst.target == 7:        #STT instruction
+                if inst.target is not None and inst.target == 7:        #STT instruction
                     print("One of the instructions was a speech to text command.")
                     while not (STTqueue.get() == inst.speechToText):       #wait till server receives STT message containing inst.speechToText
                         pass
                     inst.runInstruction(x)
-                elif inst.target == 6:        #TTS instruction
+                elif inst.target is not None and  inst.target == 6:        #TTS instruction
                     print("One of instructions was a voice command.")
+                    # client.message = inst.textToSpeak
+                    # client.thread.start()
+                    # client.thread.join()
+                    # self.inst_thread = threading.Thread(target=client.sendMessage, args=(client.self, inst.textToSpeak))
+                    # self.inst_thread.start()
                     client.sendMessage(inst.textToSpeak)
-                    time.sleep(.05)
-                elif inst.target == 5: #If the instruction is Pause
+                elif inst.target is not None and  inst.target == 5: #If the instruction is Pause
+                    print("*******************SLEEP****************")
+                    # client.messsage = "Sleeping"
+                    # client.thread.start()
+                    # client.sendMessage("PAUSE COMMAND")
                     time.sleep(inst.run_time)
                 else:
                     inst.runInstruction(x)
+            # time.sleep(.5)
+
+        client.socket.close();
                     
         x.setTarget(0, 6000)
         x.setTarget(1, 6000)
@@ -486,8 +497,8 @@ class gui():
 if __name__ == "__main__":
 
     #Grab Command line arguments for client server configuration
-    PORT = int(sys.argv[2])
-    ADDRESS = sys.argv[1]
+    PORT = 9999 # int(sys.argv[2])
+    ADDRESS = "10.200.54.141" # sys.argv[1]
 
     guiInst = gui(ADDRESS, PORT)
 
@@ -502,6 +513,7 @@ if __name__ == "__main__":
     Root = Tk()
     Root.title('Robot Touch Controls')
     Root.geometry('800x600')
+    # Root.protocol("WM_DELETE_WINDOW", sys.exit())
 
     #Create an object whose job is to act as a TargetObject, that is, to received the dropped object.
     TargetObject = Receptor(guiInst)
@@ -540,20 +552,7 @@ if __name__ == "__main__":
     STT = Button(frame,text='STT')
     STT.pack(fill='x',)
     STT.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'STT')) 
-#    Eva = Button(frame,text='Eva')
-#    Eva.pack(fill='x',)
-#    Eva.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'Eva'))          #Eva
-#    NothingHere = Button(frame,text='NothingHere')
-#    NothingHere.pack(fill='x',)
-#    NothingHere.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'NothingHere'))      #Nothing here
-#    GrowBolts = Button(frame,text='GrowBolts')
-#    GrowBolts.pack(fill='x',)
-#    GrowBolts.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'GrowBolts'))      #Grow some bolts
-#    Introduce = Button(frame,text='Introduce')
-#    Introduce.pack(fill='x',)
-#    Introduce.bind('<ButtonPress>',lambda event: guiInst.on_dnd_start(event, 'Introduce'))      #Allow me to introduce myself, I am CL4P-TP
 
-    #Create all right-hand-side frame rectangles, set them to give drops to TargetObject (Receptor()), and add them to dictionary for coordinate lookup through get_frame_num
     frame1 = FrameDnd(Root, width=75, height = 200, GiveDropTo=TargetObject, relief=RAISED, borderwidth=2)
     frame1.pack(side = LEFT,expand=NO,fill=None,padx=5)
     frame1.pack_propagate(False)
