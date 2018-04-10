@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="edu.montana.cs.klise.robot.MainActivity">
+
+    <RelativeLayout
+        android:layout_width="409dp"
+        android:layout_height="603dp"
+        tools:layout_editor_absoluteX="11dp"
+        tools:layout_editor_absoluteY="-12dp">
+
+        <Button
+            android:id="@+id/talkButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignStart="@+id/speakButton"
+            android:layout_alignTop="@+id/ipAddress"
+            android:text="TTS"
+            tools:layout_editor_absoluteX="103dp"
+            tools:layout_editor_absoluteY="48dp" />
+
+        <EditText
+            android:id="@+id/ipAddress"
+            android:layout_width="135dp"
+            android:layout_height="40dp"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="69dp"
+            android:layout_marginTop="54dp"
+            android:layout_toEndOf="@+id/talkButton"
+            android:ems="10"
+            android:inputType="textPersonName"
+            android:text="IP"
+            tools:layout_editor_absoluteX="132dp"
+            tools:layout_editor_absoluteY="385dp" />
+
+        <Button
+            android:id="@+id/speakButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_below="@+id/talkButton"
+            android:layout_marginStart="26dp"
+            android:layout_marginTop="139dp"
+            android:text="STT" />
+
+        <EditText
+            android:id="@+id/talkText"
+            android:layout_width="228dp"
+            android:layout_height="51dp"
+            android:ems="10"
+            android:inputType="textPersonName"
+            android:text="10.200.42.151"
+            tools:layout_editor_absoluteX="181dp"
+            tools:layout_editor_absoluteY="223dp"
+            android:layout_alignTop="@+id/speakButton"
+            android:layout_alignStart="@+id/ipAddress" />
+
+    </RelativeLayout>
+
+</android.support.constraint.ConstraintLayout>
